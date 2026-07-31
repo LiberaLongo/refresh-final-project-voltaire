@@ -1,3 +1,4 @@
+import logging
 import os
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
@@ -18,10 +19,10 @@ def import_to_db(table, columns):
 			f"postgresql://{USER}:{PASSWORD}@{HOST}:{PORT}/{DB_NAME}"
 		)
 	else:
-		print("Errore: .env is not configured correctly --> connection_str contains None values")
+		logging.info("Errore: .env is not configured correctly --> connection_str contains None values")
 		raise SystemExit(1)
 
-	print(f"connectrion_str = {connection_str}")
+	logging.info(f"connectrion_str = {connection_str}")
 
 	engine = create_engine(connection_str)
 

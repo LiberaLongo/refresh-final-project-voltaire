@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+import logging
 import json
 import requests
 import time
@@ -7,9 +7,9 @@ from urllib.parse import parse_qs, urlparse
 from m_filename import create_name
 
 def download(day):
-	print(f"day = {day}")
+	logging.info(f"day = {day}")
 	day_url = str(day).replace("-", "")
-	print(f"day_url = {day_url}")
+	logging.info(f"day_url = {day_url}")
 	url = f"https://apps.arpae.it/REST/bollettini_qa/{day_url}"
 
 	response = requests.get(url)

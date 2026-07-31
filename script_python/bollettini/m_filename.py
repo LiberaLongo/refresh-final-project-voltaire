@@ -1,3 +1,4 @@
+import logging
 import os
 from dotenv import load_dotenv
 from pathlib import Path
@@ -13,7 +14,7 @@ def create_name(day):
 
 	# stringa path
 	path = f"{folder}/{name_file}.json"
-	print(f"path_bollettino = {path}")
+	logging.info(f"path_bollettino = {path}")
 	return Path(path)
 
 def get_name(date):
