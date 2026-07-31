@@ -67,3 +67,4 @@ Vanessa: lavorato su powerbi, generato slide con ia per integrazione presentazio
 
 Tiziano: documento con i valori di soglia dei 5 inquinanti recuperato da sito eur-lex Gazzetta Ufficiale dell'Unione Europea
 
+Alessandra: sistemata la mappa delle centraline (azure map) e caricato il pbix aggiornato su git senza sovrascrivere il precedente (il nuovo file ha la data nel nome)
