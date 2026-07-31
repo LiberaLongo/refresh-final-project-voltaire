@@ -23,12 +23,6 @@ def import_to_db(table, columns):
 
 	print(f"connectrion_str = {connection_str}")
 
-	# mi assicuro che bronze esista, e ese non esiste lo creo
-	schema_name = "bronze"
-	with engine.connect() as conn:
-		conn.execute(text(f"CREATE SCHEMA IF NOT EXISTS {schema_name}"))
-		conn.commit()
-
 	engine = create_engine(connection_str)
 
 	# mi assicuro che bronze esista, e ese non esiste lo creo
