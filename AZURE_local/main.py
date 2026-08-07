@@ -21,15 +21,16 @@ def my_main():
 			three_days_ago
 		]
 
-	logging.info(f"days: {array_of_days}")
+	logging.info(f"days: {array_of_days} - definizione array giorni")
 
+	logging.info("start - lettura dei json e popolamento della tabella")
 	#tabella vuota
 	table = []
 	for day in array_of_days:
 		# popolo la tabella con i dati presi dai json
 		table = read(day, table)
+	logging.info("end - lettura dei json e popolamento della tabella")
 
-	# logging.info(table)
 	logging.info("table = [")
 	for i in table:
 		logging.info(f"\t{i} ,")
