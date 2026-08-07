@@ -48,6 +48,9 @@ def add_row_to_table (table, day, info, dict = {}):
 	return table
 
 def read(today, table = []):
+	logging.info("start - funzione read()")
+
+	logging.info("legge il nome del file da leggere")
 	# nome del file da leggere
 	file_name = get_name(today)
 
@@ -58,6 +61,7 @@ def read(today, table = []):
 		download(today)
 		f = open(file_name, "r", encoding="utf-8")
 
+	logging.info("legge il file ed estrae il json")
 	# leggo il file ed estraggo il json
 	with f:
 		my_json = json.load(f)
@@ -106,6 +110,8 @@ def read(today, table = []):
 	# lo carico su dbeaver (azure)
 
 	# in sequito vorremmo vedere gli ultimi 3 giorni
+
+	logging.info("end - funzione read(), ritorna la 'table' popolata")
 
 	return table
 
