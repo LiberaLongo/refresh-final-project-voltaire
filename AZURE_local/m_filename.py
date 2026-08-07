@@ -5,12 +5,15 @@ from pathlib import Path
 
 def get_folder():
 	load_dotenv(".env")
+	logging.info("Download folder: " + os.getenv("DOWNLOAD_FOLDER"))
 	return os.getenv("DOWNLOAD_FOLDER")
 
 def create_name(day):
 	folder = get_folder()
+	logging.info("Folder for creating name: " + folder)
 	# scelgo il nome del file del bollettino
 	name_file = "bollettino_" + str(day)
+	logging.info("Name of the file: " + name_file)
 
 	# stringa path
 	path = f"{folder}/{name_file}.json"
@@ -19,4 +22,5 @@ def create_name(day):
 
 def get_name(date):
 	folder = get_folder()
+	logging.info("Folder for getting name: " + folder)
 	return Path(f"{folder}bollettino_{date}.json")
