@@ -28,7 +28,9 @@ def timer_trigger(myTimer: func.TimerRequest) -> None:
 def http_trigger(req: func.HttpRequest) -> func.HttpResponse:
     logging.info('Python HTTP trigger function processed a request.')
 
+    logging.info("start - richiamo della funzione my_main()")
     my_main()
+    logging.info("end - richiamo della funzione my_main()")
 
     return func.HttpResponse(
         "my_main worked properly.",
