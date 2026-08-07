@@ -5,6 +5,7 @@ import os
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 import pandas as pd
+from pathlib import Path
 
 def my_main_debug():
 	# legge le variabili di ambiente per la connessione al db
@@ -37,7 +38,15 @@ def my_main_debug():
 	with engine.connect() as conn:
 		conn.execute(text(f"CREATE SCHEMA IF NOT EXISTS {schema_name}"))
 		conn.commit()
+	logging.info("main_debug: creazione schema completata")
 
+	home = Path(os.environ["HOME"])
+	(home / "file1.txt").write_text("una cazzata a raglio")
+	'''
+	with open("file_di_prova.txt", "w", encoding="utf-8") as f:
+			f.write('scrivo una cazzata di prova\n')
+	logging.info("scrittura file di prova completata")
+	'''
 	return
 
 
