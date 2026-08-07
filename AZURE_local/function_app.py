@@ -31,3 +31,17 @@ def http_trigger(req: func.HttpRequest) -> func.HttpResponse:
         "my_main worked properly.",
         status_code=200
     )
+
+# seconda funzione per test (_tiziano_)
+@app.route(route="http_trigger2_test_tt", auth_level=func.AuthLevel.FUNCTION)
+def http_trigger2_test_tt(req: func.HttpRequest) -> func.HttpResponse:
+    logging.info('trigger http 2 di test')
+
+#    my_main()
+# eseguo un semplice comando
+    print ('>>> ciccioli e pancetta')
+
+    return func.HttpResponse(
+        "trigger http 2 terminata correttamente.",
+        status_code=200
+    )
