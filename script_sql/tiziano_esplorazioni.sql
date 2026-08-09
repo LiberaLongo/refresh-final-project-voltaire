@@ -1,0 +1,285 @@
+-- verifiche sulla tabella anagrafe stazioni
+-- la tabella non è una dimensione pura, può essere modellata in fatto + dim
+
+-- quante sono le stazioni differenti?
+select distinct aas.cod_staz from bronze.aria_anagrafe_stazioni aas ;
+-- sono 54
+
+-- ci sono errori nei parametri associati alle stazioni?
+select distinct aas.stazione, aas.cod_staz, aas.comune, aas.indirizzo, 
+				aas.provincia , aas.altezza, aas.coord_x, aas.coord_y,
+				aas.lon_geo, aas.lat_geo, aas.sr, aas.sr_geo  
+from  bronze.aria_anagrafe_stazioni aas;
+-- no sono sempre 54
+
+
+-- creazione della dim_stazioni
+drop table if exists silver.dim_stazioni;
+create table silver.dim_stazioni as ( 
+	select distinct aas.cod_staz, aas.stazione, aas.comune, aas.indirizzo, 
+				aas.provincia , aas.altezza, aas.coord_x, aas.coord_y,
+				aas.lon_geo, aas.lat_geo, aas.sr, aas.sr_geo  
+	from  bronze.aria_anagrafe_stazioni aas
+	union
+	select -1 as cod_staz, 'ND' as stazione, 'ND' as comune, 'ND' as indirizzo, 'ND' as provincia,
+		0 as altezza, 0 as coord_x, 0 as coord_y, 0 as lon_geo, 0 as lat_geo, 0 as sr, 0 as sr_geo
+	order by cod_staz
+	);
+
+select * from silver.dim_stazioni ds ;
+
+--creazione della dim_parametri
+drop table if exists silver.dim_parametri;
+create table silver.dim_parametri as (
+	select id_parametro, parametro, um, tmed_min, note
+	from bronze.aria_parametri_inquinanti
+	union
+	select -1 as id_parametro, 'ND' as parametro, 'ND' as um, 0 as tmed_min, '--- valore parametro fittizio ---'
+	order by id_parametro);
+
+select * from silver.dim_parametri;
+
+
+
+-- prime bozze di join
+
+-- costruzione della tabella storici per PM10 in silver
+-- conversione dei dati tempo in tipo timestamp
+drop table if exists silver.pm10;
+create table silver.pm10 as (
+	SELECT cod_staz, id_param, 
+	to_timestamp(data_inizio , 'DD/MM/YYYY HH24') as data_inizio,  
+	to_timestamp(data_inizio , 'DD/MM/YYYY HH24') as data_fine,
+	valore, um FROM bronze.pm10
+	);
+
+-- elenco delle misure di una centralina specifica per il 2025
+select ds.stazione, ds.comune, p.id_param, p.data_inizio, p.valore, p.um 
+from silver.pm10 p 
+join silver.dim_stazioni ds on p.cod_staz = ds.cod_staz 
+join silver.dim_parametri dp on dp.id_parametro = p.id_param 
+where dp.parametro = 'PM10' and ds.stazione = 'PORTA SAN FELICE'
+		and EXTRACT(YEAR FROM to_timestamp(p.data_inizio , 'DD/MM/YYYY HH24')) = 2025 
+order by data_inizio;
+
+
+-- creazione della view con le posizioni geografiche delle centraline stazioni di rilevamento
+drop view if exists gold.mappa_geografica_stazioni;
+create view gold.mappa_geografica_stazioni as ( 
+	select stazione, comune, provincia, lon_geo, lat_geo from silver.dim_stazioni ds
+	where ds.cod_staz != -1
+	);
+
+-- elenco delle misure di una centralina specifica per il 2025
+-- estraggo la media annuale
+select ds.stazione, ds.comune, p.id_param, avg(p.valore), p.um 
+from silver.pm10 p 
+join silver.dim_stazioni ds on p.cod_staz = ds.cod_staz 
+join silver.dim_parametri dp on dp.id_parametro = p.id_param 
+where dp.parametro = 'PM10' and ds.stazione = 'PORTA SAN FELICE'
+		and EXTRACT(YEAR FROM to_timestamp(p.data_inizio , 'DD/MM/YYYY HH24')) = 2025 
+group by stazione, comune, id_param, p.um;
+
+-- elenco delle misure di ogni centralina per il 2025
+-- estraggo la media annuale
+select ds.stazione, ds.comune, ds.provincia, dp.parametro, avg(p.valore), p.um 
+from silver.pm10 p 
+join silver.dim_stazioni ds on p.cod_staz = ds.cod_staz 
+join silver.dim_parametri dp on dp.id_parametro = p.id_param 
+where dp.parametro = 'PM10' 
+		and EXTRACT(YEAR FROM to_timestamp(p.data_inizio , 'DD/MM/YYYY HH24')) = 2025 
+group by stazione, comune, provincia, parametro, p.um;
+
+-- elenco delle misure delle centraline, media per provincia per anno specifico
+-- estraggo la media annuale
+select ds.provincia, dp.parametro, EXTRACT(YEAR FROM to_timestamp(p.data_inizio , 'DD/MM/YYYY HH24')) as anno,
+		avg(p.valore) as media_annuale, p.um 
+from silver.pm10 p 
+join silver.dim_stazioni ds on p.cod_staz = ds.cod_staz 
+join silver.dim_parametri dp on dp.id_parametro = p.id_param 
+where dp.parametro = 'PM10'  
+group by provincia, parametro, EXTRACT(YEAR FROM to_timestamp(p.data_inizio , 'DD/MM/YYYY HH24')), p.um
+;
+
+-- creazione view di valori medi annuali per provincia per anno del parametro PM10
+drop view if exists gold.medie_annuali_provincie;
+create view gold.medie_annuali_provincie as (
+	select ds.provincia, EXTRACT(YEAR FROM to_timestamp(p.data_inizio , 'DD/MM/YYYY HH24')) as anno,
+		dp.parametro, avg(p.valore) as media_annuale, p.um 
+	from silver.pm10 p 
+	join silver.dim_stazioni ds on p.cod_staz = ds.cod_staz 
+	join silver.dim_parametri dp on dp.id_parametro = p.id_param 
+	where dp.parametro = 'PM10'  
+	group by provincia, parametro, EXTRACT(YEAR FROM to_timestamp(p.data_inizio , 'DD/MM/YYYY HH24')), p.um
+);
+
+-- creazione view di valori medi mensili per provincia per mese+anno del parametro PM10
+drop view if exists gold.medie_mensili_provincie;
+create view gold.medie_mensili_provincie as (
+	select ds.provincia, 
+		EXTRACT(YEAR FROM to_timestamp(p.data_inizio , 'DD/MM/YYYY HH24')) as anno,
+		EXTRACT(MONTH FROM to_timestamp(p.data_inizio , 'DD/MM/YYYY HH24')) as mese,
+		dp.parametro, avg(p.valore) as media_annuale, p.um 
+	from silver.pm10 p 
+	join silver.dim_stazioni ds on p.cod_staz = ds.cod_staz 
+	join silver.dim_parametri dp on dp.id_parametro = p.id_param 
+	where dp.parametro = 'PM10'  
+	group by provincia, parametro, 
+			EXTRACT(YEAR FROM to_timestamp(p.data_inizio , 'DD/MM/YYYY HH24')), 
+			EXTRACT(MONTH FROM to_timestamp(p.data_inizio , 'DD/MM/YYYY HH24')),
+			p.um
+);
+
+
+-- costruzione della tabella silver per il ranking europeo delle città
+drop table if exists silver.city_ranking;
+create table silver.city_ranking as (
+	SELECT "Country" as country, 
+		"City name" as city_name, 
+		"Population in the city" as population, 
+		"City Centroids Latitude" as lat, 
+		"City Centroids Longitude" as long,
+		"Rank" as rank, 
+		"Fine particulate matter (ug/m3)" as pm25, 
+		"Rank (PM2.5)" as rank_pm25,
+		"Ozone (ug/m3)", 
+		"Rank (O3)" as rank_o3, 
+		"Nitrogen dioxide (ug/m3)", 
+		"Rank (NO2)" as rank_no2
+	FROM bronze.cityranking_eu
+);
+
+
+-- creazione medie triennali provincie per determinare la provincie
+-- più inquinate, si considerano gli ultimi tre anni 2023-2024-2025
+drop view if exists gold.medie_triennali_provincie_pm10;
+create view gold.medie_triennali_provincie_pm10 as (
+	select ds.provincia, 
+		dp.parametro, avg(p.valore) as media_triennale, p.um 
+	from silver.pm10 p 
+	join silver.dim_stazioni ds on p.cod_staz = ds.cod_staz 
+	join silver.dim_parametri dp on dp.id_parametro = p.id_param 
+	where dp.parametro = 'PM10' and 
+		EXTRACT(YEAR FROM (p.data_inizio)) >= 2023  
+		and EXTRACT(YEAR FROM (p.data_inizio)) <= 2025
+	group by provincia, parametro, p.um
+	order by avg(p.valore) DESC);
+
+drop view if exists gold.medie_triennali_provincie_pm25;
+create view gold.medie_triennali_provincie_pm25 as (
+	select ds.provincia, 
+		dp.parametro, avg(p.valore) as media_triennale, p.um 
+	from silver.pm25 p 
+	join silver.dim_stazioni ds on p.cod_staz = ds.cod_staz 
+	join silver.dim_parametri dp on dp.id_parametro = p.id_param 
+	where dp.id_parametro  = 111 and 
+		EXTRACT(YEAR FROM (p.data_inizio)) >= 2023  
+		and EXTRACT(YEAR FROM (p.data_inizio)) <= 2025
+	group by provincia, parametro, p.um
+	order by avg(p.valore) DESC);
+
+drop view if exists gold.medie_triennali_provincie_no2;
+create view gold.medie_triennali_provincie_no2 as (
+	select ds.provincia, 
+		dp.parametro, avg(p.valore) as media_triennale, p.um 
+	from silver.no2 p 
+	join silver.dim_stazioni ds on p.cod_staz = ds.cod_staz 
+	join silver.dim_parametri dp on dp.id_parametro = p.id_param 
+	where dp.id_parametro  = 8 and 
+		EXTRACT(YEAR FROM (p.data_inizio)) >= 2023  
+		and EXTRACT(YEAR FROM (p.data_inizio)) <= 2025
+	group by provincia, parametro, p.um
+	order by avg(p.valore) DESC);
+
+drop view if exists gold.medie_triennali_provincie_o3;
+create view gold.medie_triennali_provincie_o3 as (
+	select ds.provincia, 
+		dp.parametro, avg(p.valore) as media_triennale, p.um 
+	from silver.o3 p 
+	join silver.dim_stazioni ds on p.cod_staz = ds.cod_staz 
+	join silver.dim_parametri dp on dp.id_parametro = p.id_param 
+	where dp.id_parametro  = 7 and 
+		EXTRACT(YEAR FROM (p.data_inizio)) >= 2023  
+		and EXTRACT(YEAR FROM (p.data_inizio)) <= 2025
+	group by provincia, parametro, p.um
+	order by avg(p.valore) DESC);
+
+drop view if exists gold.medie_triennali_provincie_co;
+create view gold.medie_triennali_provincie_co as (
+	select ds.provincia, 
+		dp.parametro, avg(p.valore) as media_triennale, p.um 
+	from silver.co p 
+	join silver.dim_stazioni ds on p.cod_staz = ds.cod_staz 
+	join silver.dim_parametri dp on dp.id_parametro = p.id_param 
+	where dp.id_parametro  = 10 and 
+		EXTRACT(YEAR FROM (p.data_inizio)) >= 2023  
+		and EXTRACT(YEAR FROM (p.data_inizio)) <= 2025
+	group by provincia, parametro, p.um
+	order by avg(p.valore) DESC);
+
+-- fine creazione viste medie triennali ultimi tre anni
+-------------------------------------------------------
+
+-- creo tabella di relazione tra stazioni e parametri
+-- in pratica si estraggono le coppie ID stazione e ID parametro
+drop table if exists silver.staz_param;
+create table silver.staz_param as (
+	select aas.cod_staz , aas.id_param 
+	from bronze.aria_anagrafe_stazioni aas
+	)
+;
+
+
+-- verifiche sulla tabella bollettino misure aria
+-----------------------------------------------
+select count(*), bma.v_flag 
+from bronze.bollettino_misure_aria bma 
+group by bma.v_flag
+order by count(*);
+-- come prevedibile i dati sono validati in parte crescente da Temporanei
+-- a Giornalieri e Mensili, i Semestrali sono ancora pochi
+
+select min(bma.reftime::timestamp ) as inizio, 
+       max(bma.reftime::timestamp ) as finali
+from bronze.bollettino_misure_aria bma;
+-- i dati attuali vanno da giugno 2026 ad agosto 2026
+
+select min(bma.reftime::timestamp ) as inizio, 
+       max(bma.reftime::timestamp ) as finali,
+       'T - temporanea' as validazione
+from bronze.bollettino_misure_aria bma
+where bma.v_flag = 'T'
+union
+select min(bma.reftime::timestamp ) as inizio, 
+       max(bma.reftime::timestamp ) as finali,
+       'G - giornaliera' as validazione
+from bronze.bollettino_misure_aria bma
+where bma.v_flag = 'G'
+union
+select min(bma.reftime::timestamp ) as inizio, 
+       max(bma.reftime::timestamp ) as finali,
+       'M - mensile' as validazione
+from bronze.bollettino_misure_aria bma
+where bma.v_flag = 'M'
+union
+select min(bma.reftime::timestamp ) as inizio, 
+       max (bma.reftime::timestamp ) as finali,
+       'S - semestrale' as validazione
+from bronze.bollettino_misure_aria bma
+where bma.v_flag = 'S'
+order by inizio
+;
+
+
+-- foto al 8/8/2026 ore 5:44
+-- 3672		T
+-- 22257	G
+-- 46404	S
+-- 114414	M
+-------------
+-- 2026-06-18 11:00:00.000	2026-07-01 00:00:00.000	S - semestrale
+-- 2026-06-19 09:00:00.000	2026-08-01 00:00:00.000	M - mensile
+-- 2026-07-01 06:00:00.000	2026-08-07 00:00:00.000	G - giornaliera
+-- 2026-08-04 01:00:00.000	2026-08-08 00:00:00.000	T - temporanea
+
+
