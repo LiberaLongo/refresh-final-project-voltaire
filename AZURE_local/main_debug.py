@@ -42,6 +42,17 @@ def my_main_debug():
 
 	home = Path(os.environ["HOME"])
 	(home / "file1.txt").write_text("una cazzata a raglio")
+	logging.info("scrittura file di prova completata")
+
+	# test verifica di quale è la directory di lavoro di default della function app
+	dirdef = Path.cwd()
+	logging.info(f"La directory di lavoro attuale è {dirdef}")
+	dirdef = Path.home()
+	logging.info(f"La directory home è {dirdef}")
+
+	with open("/home/file1.txt", "r", encoding="utf-8") as f:
+		logging.info("FILE CONTENT:\n%s", f.read())
+
 	'''
 	with open("file_di_prova.txt", "w", encoding="utf-8") as f:
 			f.write('scrivo una cazzata di prova\n')
