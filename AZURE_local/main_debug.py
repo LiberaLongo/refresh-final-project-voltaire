@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 import pandas as pd
 from pathlib import Path
+import requests
 
 def my_main_debug():
 	# legge le variabili di ambiente per la connessione al db
@@ -58,6 +59,36 @@ def my_main_debug():
 			f.write('scrivo una cazzata di prova\n')
 	logging.info("scrittura file di prova completata")
 	'''
+
+# test di download file csv con le misure giornaliere
+# e le validazioni differenti T,G,M,S da ARPAE
+# url = 'https://dati.arpae.it/datastore/dump/4dc855a1-6298-4b71-a1ae-d80693d43dcb?bom=True'
+
+	logging.info("main_debug: download csv da ARPAE")
+
+	url = "https://dati.arpae.it/datastore/dump/4dc855a1-6298-4b71-a1ae-d80693d43dcb?bom=True"
+	file_path = "/home/arpae.csv"
+
+	response = requests.get(url, stream=True, timeout=120)
+	response.raise_for_status()
+
+	with open(file_path, "wb") as f:
+		for chunk in response.iter_content(chunk_size=1024 * 1024):
+			if chunk:
+				f.write(chunk)
+
+	print(f"CSV salvato in {file_path}")
+	logging.info(f"main_debug: CSV salvato in {file_path}")
+
+	logging.info("main_debug: lettura csv da ARPAE scaricato")
+	df = pd.read_csv("/home/arpae.csv", encoding="utf-8-sig")
+
+	logging.info("main_debug: scrittura su db del bollettino misure aria")
+	df.to_sql(name="bollettino_misure_aria", con=engine, schema="bronze", 
+		   if_exists="replace", index=False)
+
+	logging.info("main_debug: ---FINE FUNCTION APP---")
+	
 	return
 
 
