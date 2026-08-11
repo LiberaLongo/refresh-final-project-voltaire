@@ -7,6 +7,7 @@ from sqlalchemy import create_engine, text
 import pandas as pd
 from pathlib import Path
 import requests
+from datetime import datetime
 
 def my_main_debug():
 	# legge le variabili di ambiente per la connessione al db
@@ -84,7 +85,8 @@ def my_main_debug():
 	df = pd.read_csv("/home/arpae.csv", encoding="utf-8-sig")
 
 	logging.info("main_debug: scrittura su db del bollettino misure aria")
-	df.to_sql(name="bollettino_misure_aria", con=engine, schema="bronze", 
+	data = datetime.now().strftime("%Y-%m-%d")
+	df.to_sql(name=f"bollettino_misure_aria_{data}", con=engine, schema="bronze", 
 		   if_exists="replace", index=False)
 
 	logging.info("main_debug: ---FINE FUNCTION APP---")
