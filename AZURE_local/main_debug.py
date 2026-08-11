@@ -2,12 +2,12 @@
 
 import logging
 import os
-from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 import pandas as pd
 from pathlib import Path
 import requests
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 def my_main_debug():
 	# legge le variabili di ambiente per la connessione al db
@@ -28,40 +28,11 @@ def my_main_debug():
 	else:
 		logging.info("Errore: .env is not configured correctly --> connection_str contains None values")
 		raise SystemExit(1)
-# 	verifica che la stringa sia corretta
-#   magari meglio non mettere la password nei prompt di debug
-	logging.info(f"connectrion_str = {connection_str}")
 
 #	crea il motore di connessione al db
 	engine = create_engine(connection_str)
 
-# crea uno schema fittizio giusto per testare la connessione al db
-	schema_name = "ciccio_pasticcio"
-	with engine.connect() as conn:
-		conn.execute(text(f"CREATE SCHEMA IF NOT EXISTS {schema_name}"))
-		conn.commit()
-	logging.info("main_debug: creazione schema completata")
-
-	home = Path(os.environ["HOME"])
-	(home / "file1.txt").write_text("una cazzata a raglio")
-	logging.info("scrittura file di prova completata")
-
-	# test verifica di quale è la directory di lavoro di default della function app
-	dirdef = Path.cwd()
-	logging.info(f"La directory di lavoro attuale è {dirdef}")
-	dirdef = Path.home()
-	logging.info(f"La directory home è {dirdef}")
-
-	with open("/home/file1.txt", "r", encoding="utf-8") as f:
-		logging.info("FILE CONTENT:\n%s", f.read())
-
-	'''
-	with open("file_di_prova.txt", "w", encoding="utf-8") as f:
-			f.write('scrivo una cazzata di prova\n')
-	logging.info("scrittura file di prova completata")
-	'''
-
-# test di download file csv con le misure giornaliere
+# download file csv con le misure giornaliere
 # e le validazioni differenti T,G,M,S da ARPAE
 # url = 'https://dati.arpae.it/datastore/dump/4dc855a1-6298-4b71-a1ae-d80693d43dcb?bom=True'
 
@@ -85,8 +56,8 @@ def my_main_debug():
 	df = pd.read_csv("/home/arpae.csv", encoding="utf-8-sig")
 
 	logging.info("main_debug: scrittura su db del bollettino misure aria")
-	data = datetime.now().strftime("%Y-%m-%d")
-	data_ora = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+	data = datetime.now(ZoneInfo("Europe/Rome")).strftime("%Y-%m-%d")
+	data_ora = datetime.now(ZoneInfo("Europe/Rome")).strftime("%Y-%m-%d_%H-%M-%S")
 	df.to_sql(name=f"bollettino_misure_aria_{data_ora}", con=engine, schema="bronze", 
 		   if_exists="replace", index=False)
 

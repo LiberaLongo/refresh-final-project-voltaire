@@ -4,8 +4,6 @@ from main import my_main
 
 # aggiunta TT
 from main_debug import my_main_debug
-from datetime import datetime, timezone
-from zoneinfo import ZoneInfo
 
 app = func.FunctionApp()
 
@@ -44,8 +42,6 @@ def http_trigger(req: func.HttpRequest) -> func.HttpResponse:
 def http_trigger2_test_tt(req: func.HttpRequest) -> func.HttpResponse:
     logging.info('trigger http 2 di test')
 
-# eseguo un semplice comando
-    print ('>>> ciccioli e pancetta')
 # eseguo un codice parallelo per debuggare la connesione al db
     my_main_debug()
 
@@ -54,11 +50,3 @@ def http_trigger2_test_tt(req: func.HttpRequest) -> func.HttpResponse:
         status_code=200
     )
 
-
-# check timestamp di sistema Azure
-@app.route(route="http_trigger3_check_timestamp", auth_level=func.AuthLevel.FUNCTION)
-def http_trigger3_check_timestamp(req: func.HttpRequest) -> func.HttpResponse:
-    logging.info('trigger http 3 di check timestamp')
-    logging.info ('>>> timestamp di sistema Azure: %s', datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"))
-    logging.info ('>>> timestamp di zona Europe/Rome: %s', datetime.now(ZoneInfo("Europe/Rome")).strftime("%Y-%m-%d %H:%M:%S"))
-    pass
