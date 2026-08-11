@@ -86,7 +86,8 @@ def my_main_debug():
 
 	logging.info("main_debug: scrittura su db del bollettino misure aria")
 	data = datetime.now().strftime("%Y-%m-%d")
-	df.to_sql(name=f"bollettino_misure_aria_{data}", con=engine, schema="bronze", 
+	data_ora = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+	df.to_sql(name=f"bollettino_misure_aria_{data_ora}", con=engine, schema="bronze", 
 		   if_exists="replace", index=False)
 
 	logging.info("main_debug: ---FINE FUNCTION APP---")
