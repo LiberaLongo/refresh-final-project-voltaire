@@ -282,4 +282,30 @@ order by inizio
 -- 2026-07-01 06:00:00.000	2026-08-07 00:00:00.000	G - giornaliera
 -- 2026-08-04 01:00:00.000	2026-08-08 00:00:00.000	T - temporanea
 
+-- verifiche su due versioni del bollettino giornaliero di misure aria
+select count (*) from bronze."bollettino_misure_aria_2026-08-11" bma 
+join bronze.bollettino_misure_aria_old bmao on bmao._id = bma._id 
+;
+-- 123580
+select count(*) from bronze."bollettino_misure_aria_2026-08-11" bma ;
+-- 186881
+select count(*) from bronze.bollettino_misure_aria_old bmao  ;
+-- 186747
+-- record vanno record vengono e record cambiano
 
+select min(bma.reftime::timestamp) as inizio, max(bma.reftime::timestamp) as fine 
+from bronze."bollettino_misure_aria_2026-08-11" bma ;
+
+select min(bma.reftime::timestamp) as inizio, max(bma.reftime::timestamp) as fine 
+from bronze."bollettino_misure_aria_old" bma ;
+-- vengono droppati i valori vecchi
+-- ma gli id delle misure restano
+-- verifichiamo!
+
+select * from bronze."bollettino_misure_aria_2026-08-11" bma 
+where bma.reftime::date = '2026-07-17'and bma.variable_id = 5 and bma.station_id = 7000042
+union 
+select * from bronze.bollettino_misure_aria_old bmao 
+where bmao.reftime::date = '2026-07-17'and bmao.variable_id = 5 and bmao.station_id = 7000042
+;
+-- porca paletta, cambiano gli _id :-D
