@@ -309,3 +309,42 @@ select * from bronze.bollettino_misure_aria_old bmao
 where bmao.reftime::date = '2026-07-17'and bmao.variable_id = 5 and bmao.station_id = 7000042
 ;
 -- porca paletta, cambiano gli _id :-D
+
+-- vedere quante misure appaiono con validazioni differenti nei due bollettini
+with tempo as (
+	select bma.station_id , bma.variable_id ,
+	   bmao.v_flag as v_old , bma.v_flag as v_new, 
+	   bmao.reftime::timestamp, bma.reftime::timestamp 
+	from bronze."bollettino_misure_aria_2026-08-11" bma 
+	join bronze.bollettino_misure_aria_old bmao on 
+	bma.station_id = bmao.station_id and bma.variable_id = bmao.variable_id 
+	and bmao.reftime = bma.reftime and bma.v_flag != bmao.v_flag
+	)
+select * from tempo
+;
+
+select bma.station_id , bma.variable_id , bma.reftime, 
+       bma.v_flag as v_flag_old, bma2.v_flag as v_flag_new
+from bronze."bollettino_misure_aria_2026-08-11" bma 
+join bronze."bollettino_misure_aria_2026-08-11_17-20-56" bma2 
+on bma.station_id = bma2.station_id and bma.variable_id = bma2.variable_id and bma.reftime = bma2.reftime 
+   and bma.v_flag != bma2.v_flag;
+-- pare nessun aggiornamento dal vecchio bollettino scaricato questa notte
+-- a quello di oggi alle 19:20
+-- devo sistemare il prompt orario
+
+-- CONTROLLO DI OWNERSHIP
+-- verifica dei privilegi per lo schema e per la tabella
+SELECT
+    has_schema_privilege('voltoperator', 'bronze', 'USAGE') AS schema_usage,
+    has_table_privilege('voltoperator', 'bronze.bollettino_misure_aria_2026-08-12_10-34-47', 'SELECT') AS table_select;
+
+-- verifica di ownership di una tabella
+SELECT
+    schemaname,
+    tablename,
+    tableowner
+FROM pg_tables
+WHERE schemaname = 'bronze'
+  AND tablename like '%bollettino_misure%';
+
