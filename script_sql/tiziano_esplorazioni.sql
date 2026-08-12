@@ -348,3 +348,19 @@ FROM pg_tables
 WHERE schemaname = 'bronze'
   AND tablename like '%bollettino_misure%';
 
+-- chi possiede la nuova tabella?
+SELECT pg_get_userbyid(c.relowner), c.relname
+FROM pg_class c
+JOIN pg_namespace n ON n.oid = c.relnamespace
+WHERE n.nspname = 'bronze'
+  AND c.relname like '%bollettino%';
+
+-- visualizza le acl per default ownwer
+SELECT
+    defaclrole::regrole AS owner_role,
+    defaclnamespace::regnamespace AS schema_name,
+    defaclacl
+FROM pg_default_acl
+WHERE defaclrole = 'voltadmin'::regrole
+  AND defaclnamespace = 'bronze'::regnamespace;
+

@@ -103,3 +103,4 @@ CROSS JOIN pg_roles r
 WHERE n.nspname IN ('bronze', 'silver', 'gold')
   AND r.rolcanlogin = true
 ORDER BY n.nspname, r.rolname;
+
