@@ -53,6 +53,7 @@ GRANT SELECT ON ALL TABLES IN SCHEMA gold TO voltgolduser;
 
 -- impostazioni accessi di default per future tabelle in gold
 ALTER DEFAULT PRIVILEGES FOR ROLE voltoperator IN SCHEMA gold GRANT SELECT ON TABLES TO voltgolduser;
+ALTER DEFAULT PRIVILEGES FOR ROLE voltadmin IN SCHEMA gold GRANT SELECT ON TABLES TO voltgolduser;
 
 ------------------------
 -- select di verifica --
