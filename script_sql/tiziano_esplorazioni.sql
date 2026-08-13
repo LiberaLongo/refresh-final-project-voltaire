@@ -364,3 +364,46 @@ FROM pg_default_acl
 WHERE defaclrole = 'voltadmin'::regrole
   AND defaclnamespace = 'bronze'::regnamespace;
 
+------------------------------------------------------------------------
+-- creazione ed aggiornamento della tabella cumulativa silver.bollettini
+------------------------------------------------------------------------
+-- creazione della tabella cumulativa silver.bollettini
+CREATE TABLE silver.bollettini (
+	station_id int8,
+	variable_id int8,
+	reftime text,
+	value float8,
+	v_flag text
+	);
+-- definisco il costraint indice necessario
+CREATE UNIQUE INDEX idx_bollettini_station_variable_reftime
+ON silver.bollettini (station_id, variable_id, reftime);
+
+-- copia del bollettino in silver.staging_bollettino
+drop table if exists silver.staging_bollettino;
+create table silver.staging_bollettino as (
+	select 	station_id, variable_id , reftime ,	value , v_flag
+	from bronze."bollettino_misure_aria_2026-08-11_17-20-56" bma
+	);
+
+drop table if exists silver.staging_bollettino;
+create table silver.staging_bollettino as (
+	select 	station_id, variable_id , reftime ,	value , v_flag
+	from bronze."bollettino_misure_aria_2026-08-12_15-35-38" bma
+	);
+
+
+-- aggiornamento della tabella cumulativa silver.bollettini
+-- operazione da compiere ogni giorno, dopo lo scarico del bollettino giornaliero
+-- rinominandolo silver.staging_bollettino
+INSERT INTO silver.bollettini (
+	station_id, variable_id, reftime, value, v_flag)
+SELECT station_id, variable_id, reftime, value, v_flag
+FROM silver.staging_bollettino
+ON CONFLICT (station_id, variable_id, reftime)
+DO UPDATE SET 
+	value = EXCLUDED.value,
+	v_flag = EXCLUDED.v_flag
+;
+
+
