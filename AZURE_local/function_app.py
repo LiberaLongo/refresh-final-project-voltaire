@@ -50,3 +50,16 @@ def http_trigger2_test_tt(req: func.HttpRequest) -> func.HttpResponse:
         status_code=200
     )
 
+# seconda funzione per scarico giornaliero dati misure
+# prima esecuzione per test alle 12:00 poi ridefinisco di notte dopo le 24 
+
+@app.timer_trigger(
+    schedule="0 0 12 * * *",
+    arg_name="timer",
+    run_on_startup=False,
+    use_monitor=True
+)
+def daily_job(timer: func.TimerRequest) -> None:
+    logging.info("Esecuzione job giornaliero")
+    my_main_debug()  # Esegui la funzione per il job giornaliero
+    logging.info("Job giornaliero completato")
