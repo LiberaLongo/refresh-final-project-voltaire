@@ -68,3 +68,8 @@ Vanessa: lavorato su powerbi, generato slide con ia per integrazione presentazio
 Tiziano: documento con i valori di soglia dei 5 inquinanti recuperato da sito eur-lex Gazzetta Ufficiale dell'Unione Europea
 
 Alessandra: sistemata la mappa delle centraline (azure map) e caricato il pbix aggiornato su git senza sovrascrivere il precedente (il nuovo file ha la data nel nome)
+
+giovedì 13 agosto 2026
+----------------------
+[IMPORTANTE!!!] (Tiziano - promemoria) Come gestire i dati validati a 4 livelli di validazione progressiva? Il punto è: si aggiornano le tabelle di accumulo con i dati che vengono modificati o si mantiene memoria di tutto? Come si applica la ETL nel nostro caso "dinamico"?
+
