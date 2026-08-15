@@ -59,11 +59,60 @@ def my_main_debug():
 	data = datetime.now(ZoneInfo("Europe/Rome")).strftime("%Y-%m-%d")
 	data_ora = datetime.now(ZoneInfo("Europe/Rome")).strftime("%Y-%m-%d_%H-%M-%S")
 	df.to_sql(name=f"bollettino_misure_aria_{data_ora}", con=engine, schema="bronze", 
-		   if_exists="replace", index=False)
-
+			   if_exists="replace", index=False)
+	df.to_sql(name="staging_bollettino", con=engine, schema="silver", 
+			   if_exists="replace", index=False)
+	
 	logging.info("main_debug: ---FINE FUNCTION APP---")
 	
 	return
 
+def up_bollettini():
+	if True: return
+	# legge le variabili di ambiente per la connessione al db
+	HOST = os.getenv("DB_HOST")
+	PORT = os.getenv("DB_PORT")
+	DB_NAME = os.getenv("DB_NAME")
+	USER = os.getenv("DB_USER")
+	PASSWORD = os.getenv("DB_PASSWORD")
+	logging.info("update_bollettini: lettura variabili di ambiente per la connessione al db")
 
+#	costruisce la stringa di connessione al db
+	if USER and PASSWORD and HOST and PORT and DB_NAME:
+			connection_str = (
+				f"postgresql://{USER}:{PASSWORD}@{HOST}:{PORT}/{DB_NAME}"
+			)
+	else:
+		logging.info("Errore: .env is not configured correctly --> connection_str contains None values")
+		raise SystemExit(1)
+	logging.info("update_bollettini: costruita la stringa di connessione al db completata")
+
+#	crea il motore di connessione al db
+	engine = create_engine(connection_str)
+	logging.info("update_bollettini: creato il motore di connessione al db completata")
+
+# 	esegue l'update della tabella cumulativa bollettini
+#   aggiornando con i valori di staging_bollettino giornaliero
+	try:
+		with engine.begin() as conn:
+			conn.execute(
+				text("""
+					INSERT INTO silver.bollettini (
+						station_id, variable_id, reftime, value, v_flag)
+					SELECT station_id, variable_id, reftime, value, v_flag
+				FROM silver.staging_bollettino
+				ON CONFLICT (station_id, variable_id, reftime)
+				DO UPDATE SET 
+					value = EXCLUDED.value,
+					v_flag = EXCLUDED.v_flag
+				;
+            """)
+        )
+	except Exception as e:
+		logging.exception(f"update_bollettini: Errore durante l'aggiornamento della tabella cumulativa bollettini: {e}")
+		raise
+
+	logging.info("update_bollettini: aggiornata la tabella cumulativa bollettini. Completato, OK!")
+
+	return
 
