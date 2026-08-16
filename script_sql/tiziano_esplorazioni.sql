@@ -407,3 +407,76 @@ DO UPDATE SET
 ;
 
 
+-- Quanti sforamenti PM10 per ogni centralina per ogni anno
+select ds.cod_staz , ds.comune , ds.indirizzo , ds.provincia, count(*) as superamenti, extract(year from p.data_fine::date)
+from silver.pm10 p 
+join silver.dim_parametri dp on dp.id_parametro = p.id_param 
+join silver.dim_stazioni ds on ds.cod_staz = p.cod_staz 
+where p.valore >= 50
+group by ds.cod_staz , ds.comune , ds.indirizzo , ds.provincia, extract(year from p.data_fine::date) 
+having count(*) >=35
+order by superamenti desc;
+
+-- Biossido di azoto
+select n.cod_staz, count(*) 
+from silver.no2 n
+where n.data_fine::date = '2025-06-01' 
+group by n.cod_staz; 
+
+-- domanda: quante misure orarie vanno perse nelle rilevazioni?
+-- per ogni stazione devo contare 24 misure
+select n.cod_staz, n.data_fine::date, count(*) 
+from silver.no2 n
+group by n.cod_staz, n.data_fine::date
+having count(*) < 24;
+
+-- uso la query precedente e conto le eccezioni
+with tabella as ( 
+select n.cod_staz, n.data_fine::date, count(*) 
+from silver.no2 n
+group by n.cod_staz, n.data_fine::date
+having count(*) < 24
+)
+select count(*) from tabella;
+--109000 eccezioni
+select count(*) from silver.no2 n ;
+-- 6 milioni di record
+
+select 109000. / (5955256./24) * 100.
+--43,9% tantissime!!!
+-- mancano tante misure
+
+select min(n.data_inizio), max(n.data_inizio ) 
+from silver.no2 n 
+
+select count( distinct (n.data_inizio::date))
+from silver.no2 n ;
+-- 5844 giorni
+
+select 5844*24
+-- dovrebbero esserci 140256  misure orarie
+
+select count(*) from silver.no2 n ;
+-- 5.955.256
+
+select count(distinct n.cod_staz) from silver.no2 n
+-- 53 codici stazione per no2
+
+select 5844*24*53
+-- 7.433.568
+
+-- vedere una distribuzione del numero di misure giornaliere per centralina per giornata
+with tabella as (
+select n.cod_staz, n.data_fine::date, count(*) as num_misure
+from silver.no2 n
+group by n.cod_staz, n.data_fine::date
+having count(*) < 24
+)
+select count(*) , num_misure
+from tabella t
+group by num_misure
+order by num_misure desc;
+
+
+
+
