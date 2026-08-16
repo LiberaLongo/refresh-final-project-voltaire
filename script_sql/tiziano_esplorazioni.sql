@@ -564,3 +564,22 @@ select tpsm.numero_centraline ,
        tpsm.tipo_inquinante 
 from silver.tabella_prospetto_stima_misure tpsm 
 order by tpsm.tipo_inquinante ;
+
+-- alla ricerca del problema duplicazione milioni di righe O3
+select o.cod_staz , o.data_inizio::date,  count(o.valore)  from silver.o3 o
+group by cod_staz , o.data_inizio::date
+order by count(o.valore) desc;
+
+select cod_staz, data_inizio, valore 
+from silver.o3
+where cod_staz= 9000083 and data_inizio::date = '2024-11-13';
+
+-- verifica dell'unicità delle misure in base a codice stazione data e valore misurato
+select count(*) as conteggio, 'due valori' as tipo 
+from (select distinct cod_staz, data_inizio from silver.o3) 
+union
+select count(*) as conteggio, 'tre valore' as tipo 
+from (select distinct cod_staz, data_inizio, valore from silver.o3)
+;
+-- purtroppo ci sono discordanze da indagare ulteriormente
+-- 325 righe da indagare
