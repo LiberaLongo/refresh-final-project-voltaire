@@ -470,13 +470,38 @@ with tabella as (
 select n.cod_staz, n.data_fine::date, count(*) as num_misure
 from silver.no2 n
 group by n.cod_staz, n.data_fine::date
-having count(*) < 24
 )
 select count(*) , num_misure
 from tabella t
 group by num_misure
 order by num_misure desc;
+-- cos'è che ha 28, 44 e addirittura 46 misure in un giorno?
 
+with tabella as (
+select n.cod_staz, n.data_fine::date, count(*) as num_misure
+from silver.no2 n
+group by n.cod_staz, n.data_fine::date
+)
+select count(*) , num_misure, cod_staz, data_fine::date
+from tabella t
+group by num_misure, cod_staz, data_fine::date
+order by num_misure desc;
 
+select * from silver.no2 n 
+where n.cod_staz = 8000038 and data_fine::date = '2012-09-17'
+;
 
+select * from silver.no2 n 
+where n.cod_staz = 8000038 and data_fine::date = '2012-09-18'
+;
+
+-- verifica sulle unicità delle misure in no2
+select count(*), 'totale' as tipo 
+from silver.no2 
+union
+select count(*), 'distinte' as tipo 
+from (select distinct n.cod_staz, n.data_fine from silver.no2 n);
+-- sono 5.954.670 le distinte
+-- sono 5.955.256 le totali
+-- differenza -> 586 da eliminare ETL
 
