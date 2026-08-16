@@ -505,3 +505,62 @@ from (select distinct n.cod_staz, n.data_fine from silver.no2 n);
 -- sono 5.955.256 le totali
 -- differenza -> 586 da eliminare ETL
 
+--controlliamo per co
+select count(*), 'totale' as tipo 
+from silver.co
+union
+select count(*), 'distinte' as tipo 
+from (select distinct cod_staz, data_fine from silver.co);
+--differenza -> 74
+
+--controlliamo per o3
+select count(*), 'totale' as tipo 
+from silver.o3
+union
+select count(*), 'distinte' as tipo 
+from (select distinct cod_staz, data_fine from silver.o3);
+--differenza -> 4 milioni di righe
+-- cosa sono tutti queste righe sballate?!? :-/ porca paletta!!!
+
+-- quante sono le centraline che hanno raccolto dati in effetti sui vari inquinanti?
+-- per quanto tempo?
+-- TABELLA PROSPETTO PER STIMA NUMERO MISURE
+drop table if exists silver.tabella_prospetto_stima_misure;
+create table silver.tabella_prospetto_stima_misure as( 
+select count(distinct p.cod_staz) as numero_centraline, 
+		count(*) as numero_righe_misure, 
+		max(data_inizio::date) - min(data_inizio::date) as giorni_misure_totali,
+		'pm10' as tipo_inquinante from silver.pm10 p
+union
+select count(distinct cod_staz) as numero_centraline,
+		count(*) as numero_righe_misure,
+		max(data_inizio::date) - min(data_inizio::date) as giorni_misure_totali,
+		'pm2.5' as tipo_inquinante from silver.pm25
+union
+select count(distinct cod_staz) as numero_centraline,
+		count(*) as numero_righe_misure,
+		max(data_inizio::date) - min(data_inizio::date) as giorni_misure_totali,
+		'no2' as tipo_inquinante from silver.no2
+union
+select count(distinct cod_staz) as numero_centraline, 
+		count(*) as numero_righe_misure,
+		max(data_inizio::date) - min(data_inizio::date) as giorni_misure_totali,
+		'o3' as tipo_inquinante from silver.o3
+union 
+select count(distinct cod_staz) as numero_centraline,
+		count(*) as numero_righe_misure,
+		max(data_inizio::date) - min(data_inizio::date) as giorni_misure_totali,
+		'co' as tipo_inquinante from silver.co
+order by tipo_inquinante
+);
+
+select * from silver.tabella_prospetto_stima_misure ;
+
+select tpsm.numero_centraline , 
+       tpsm.giorni_misure_totali ,
+       tpsm.numero_centraline * tpsm.giorni_misure_totali as stima_misure_giornaliere,
+       tpsm.numero_centraline * tpsm.giorni_misure_totali * 24 as stima_misure_orarie,
+       tpsm.numero_righe_misure ,
+       tpsm.tipo_inquinante 
+from silver.tabella_prospetto_stima_misure tpsm 
+order by tpsm.tipo_inquinante ;
