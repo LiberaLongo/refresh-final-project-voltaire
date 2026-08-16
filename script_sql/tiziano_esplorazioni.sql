@@ -584,17 +584,14 @@ from (select distinct cod_staz, data_inizio, valore from silver.o3)
 -- purtroppo ci sono discordanze da indagare ulteriormente
 -- 325 righe da indagare
 
-
-select cod_staz, data_inizio from (select distinct cod_staz, data_inizio, valore from silver.o3)
-except 
-select cod_staz, data_inizio from (select distinct cod_staz, data_inizio from silver.o3)
-;
-
-SELECT b.*
-FROM (select distinct cod_staz, data_inizio, valore from silver.o3) as b
-WHERE NOT EXISTS (
-    SELECT 1
-    FROM (select distinct cod_staz, data_inizio from silver.o3) as a
-    WHERE a.cod_staz = b.cod_staz
-      AND a.data_inizio = b.data_inizio
-);
+-- ci sono 325 misure doppie con valori differenti,
+-- questo è un grosso problema, come lo trattiamo?
+SELECT
+    cod_staz,
+    data_inizio,
+    COUNT(DISTINCT valore) AS numero_misure,
+    ARRAY_AGG(DISTINCT valore ORDER BY valore) AS misure
+FROM silver.o3
+GROUP BY cod_staz, data_inizio
+HAVING COUNT(DISTINCT valore) > 1
+ORDER BY cod_staz, data_inizio;
