@@ -575,14 +575,19 @@ from silver.o3
 where cod_staz= 9000083 and data_inizio::date = '2024-11-13';
 
 -- verifica dell'unicità delle misure in base a codice stazione data e valore misurato
-select count(*) as conteggio, 'due valori' as tipo 
+select count(*) as conteggio, 'z - totale' as tipo
+from silver.o3 
+union
+select count(*) as conteggio, 'a - due valori' as tipo 
 from (select distinct cod_staz, data_inizio from silver.o3) 
 union
-select count(*) as conteggio, 'tre valore' as tipo 
+select count(*) as conteggio, 'b - tre valori' as tipo 
 from (select distinct cod_staz, data_inizio, valore from silver.o3)
-;
--- purtroppo ci sono discordanze da indagare ulteriormente
--- 325 righe da indagare
+order by tipo;
+-- 3957135	a - due valori
+-- 3957460	b - tre valori
+-- 7915056	z - totale
+
 
 -- ci sono 325 misure doppie con valori differenti,
 -- questo è un grosso problema, come lo trattiamo?
@@ -597,31 +602,49 @@ HAVING COUNT(DISTINCT valore) > 1
 ORDER BY cod_staz, data_inizio;
 
 -- verifica unicità misure per pm10
-select count(*) as conteggio, 'due valori' as tipo 
+select count(*) as conteggio, 'z - totale' as tipo
+from silver.pm10 
+union
+select count(*) as conteggio, 'a - due valori' as tipo 
 from (select distinct cod_staz, data_inizio from silver.pm10) 
 union
-select count(*) as conteggio, 'tre valore' as tipo 
+select count(*) as conteggio, 'b - tre valori' as tipo 
 from (select distinct cod_staz, data_inizio, valore from silver.pm10)
-;
--- non ci sono misure duplicate
+order by tipo;
+-- solo due misure duplicate
 
 -- verifica unicità misure per pm25
-select count(*) as conteggio, 'due valori' as tipo 
+select count(*) as conteggio, 'z - totale' as tipo
+from silver.pm25 
+union
+select count(*) as conteggio, 'a - due valori' as tipo 
 from (select distinct cod_staz, data_inizio from silver.pm25) 
 union
-select count(*) as conteggio, 'tre valore' as tipo 
+select count(*) as conteggio, 'b - tre valori' as tipo 
 from (select distinct cod_staz, data_inizio, valore from silver.pm25)
-;
+order by tipo;
 -- non ci sono misure duplicate
 
 -- verifica unicità misure per no2
-select count(*) as conteggio, 'due valori' as tipo 
+select count(*) as conteggio, 'z - totale' as tipo
+from silver.no2 
+union
+select count(*) as conteggio, 'a - due valori' as tipo 
 from (select distinct cod_staz, data_inizio from silver.no2) 
 union
-select count(*) as conteggio, 'tre valore' as tipo 
+select count(*) as conteggio, 'b - tre valori' as tipo 
 from (select distinct cod_staz, data_inizio, valore from silver.no2)
-;
--- ci sono 418 valori duplicati
+order by tipo;
+-- 5954670	a - due valori
+-- 5955088	b - tre valori
+-- 5955256	z - totale
+
+select 5955256-5955088 as conteggio, 'discordanze' as tipo
+union
+select 5955256-5954670 as conteggio, 'dupliche' as tipo;
+-- 168	discordanze
+-- 586	dupliche
+
 SELECT
     cod_staz,
     data_inizio,
@@ -633,13 +656,17 @@ HAVING COUNT(DISTINCT valore) > 1
 ORDER BY cod_staz, data_inizio;
 
 -- verifica unicità misure per co
-select count(*) as conteggio, 'due valori' as tipo 
+select count(*) as conteggio, 'z - totale' as tipo
+from silver.co 
+union
+select count(*) as conteggio, 'a - due valori' as tipo 
 from (select distinct cod_staz, data_inizio from silver.co) 
 union
-select count(*) as conteggio, 'tre valore' as tipo 
+select count(*) as conteggio, 'b - tre valori' as tipo 
 from (select distinct cod_staz, data_inizio, valore from silver.co)
-;
--- solo 19 valori discordanti
+order by tipo;
+-- 74 dupliche, di cui
+-- 19 misure doppie discordanti
 SELECT
     cod_staz,
     data_inizio,
