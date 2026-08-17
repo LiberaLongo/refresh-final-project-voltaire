@@ -595,3 +595,62 @@ FROM silver.o3
 GROUP BY cod_staz, data_inizio
 HAVING COUNT(DISTINCT valore) > 1
 ORDER BY cod_staz, data_inizio;
+
+-- verifica unicità misure per pm10
+select count(*) as conteggio, 'due valori' as tipo 
+from (select distinct cod_staz, data_inizio from silver.pm10) 
+union
+select count(*) as conteggio, 'tre valore' as tipo 
+from (select distinct cod_staz, data_inizio, valore from silver.pm10)
+;
+-- non ci sono misure duplicate
+
+-- verifica unicità misure per pm25
+select count(*) as conteggio, 'due valori' as tipo 
+from (select distinct cod_staz, data_inizio from silver.pm25) 
+union
+select count(*) as conteggio, 'tre valore' as tipo 
+from (select distinct cod_staz, data_inizio, valore from silver.pm25)
+;
+-- non ci sono misure duplicate
+
+-- verifica unicità misure per no2
+select count(*) as conteggio, 'due valori' as tipo 
+from (select distinct cod_staz, data_inizio from silver.no2) 
+union
+select count(*) as conteggio, 'tre valore' as tipo 
+from (select distinct cod_staz, data_inizio, valore from silver.no2)
+;
+-- ci sono 418 valori duplicati
+SELECT
+    cod_staz,
+    data_inizio,
+    COUNT(DISTINCT valore) AS numero_misure,
+    ARRAY_AGG(DISTINCT valore ORDER BY valore) AS misure
+FROM silver.no2
+GROUP BY cod_staz, data_inizio
+HAVING COUNT(DISTINCT valore) > 1
+ORDER BY cod_staz, data_inizio;
+
+-- verifica unicità misure per co
+select count(*) as conteggio, 'due valori' as tipo 
+from (select distinct cod_staz, data_inizio from silver.co) 
+union
+select count(*) as conteggio, 'tre valore' as tipo 
+from (select distinct cod_staz, data_inizio, valore from silver.co)
+;
+-- solo 19 valori discordanti
+SELECT
+    cod_staz,
+    data_inizio,
+    COUNT(DISTINCT valore) AS numero_misure,
+    ARRAY_AGG(DISTINCT valore ORDER BY valore) AS misure
+FROM silver.co
+GROUP BY cod_staz, data_inizio
+HAVING COUNT(DISTINCT valore) > 1
+ORDER BY cod_staz, data_inizio;
+
+
+
+
+
