@@ -66,13 +66,22 @@ create table silver.etl_errata_no2 as (
 
 -- costruzione della tabella storici per O3 in silver
 -- conversione dei dati tempo in tipo timestamp
+-- prima ETL si escludono i valori di misura < 0
 drop table if exists silver.o3 CASCADE;
 create table silver.o3 as (
 	SELECT cod_staz, id_param, 
 	to_timestamp(data_inizio , 'DD/MM/YYYY HH24') as data_inizio,  
 	to_timestamp(data_inizio , 'DD/MM/YYYY HH24') as data_fine,
 	valore, um FROM bronze.o3
+	where valore >= 0
 	);
+-- i valori di misura < 0 vengono riportati in tabella ETL_errata
+drop table if exists silver.etl_errata_o3;
+create table silver.etl_errata_o3 as (  
+	select * from bronze.o3
+	where valore < 0
+	);
+
 
 -- costruzione della tabella storici per CO in silver
 -- conversione dei dati tempo in tipo timestamp
