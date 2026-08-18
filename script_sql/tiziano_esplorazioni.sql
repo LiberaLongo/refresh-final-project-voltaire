@@ -677,7 +677,68 @@ GROUP BY cod_staz, data_inizio
 HAVING COUNT(DISTINCT valore) > 1
 ORDER BY cod_staz, data_inizio;
 
+-- ricerca di outlier in uno staging bollettino giornaliero di esempio
+select sb.variable_id , dp.parametro , 
+       min(sb.value) as minimo, max(sb.value) as max,
+       dp.um 
+from silver.staging_bollettino as sb
+join silver.dim_parametri dp on dp.id_parametro =sb.variable_id 
+group by sb.variable_id, dp.parametro , dp.um  
+;
 
+-- ricerca di outlier in storico pm10
+select min(p.valore) as minimo, 
+	   max(p.valore) as massimo,
+	   Extract(year from p.data_inizio::date) as anno
+from silver.pm10 p 
+group by anno
+order by anno;
+
+-- ricerca di outlier in storico pm25
+select min(p.valore) as minimo, 
+	   max(p.valore) as massimo,
+	   Extract(year from p.data_inizio::date) as anno
+from silver.pm25 p 
+group by anno
+order by anno;
+
+-- distribuzione per valori delle misure di PM10 o PM2.5 per un anno dato
+select p.valore, count(p.um) 
+from silver.pm25 p 
+--where Extract(year from p.data_fine::date) = 2025
+group by p.valore 
+order by p.valore;
+
+-- distribuzione per valori delle misure di NO2
+select n.valore, count(n.um) 
+from silver.no2 n  
+--where Extract(year from p.data_fine::date) = 2025
+group by n.valore 
+order by n.valore;
+-- ci sono 172 valori di misure negative che vanno espulse ETL
+select *
+from silver.no2 n
+where n.valore <0;
+
+
+
+-- distribuzione per valori delle misure di O3
+select n.valore, count(n.um) 
+from silver.o3 n  
+--where Extract(year from p.data_fine::date) = 2025
+group by n.valore 
+order by n.valore;
+-- ci sono 10 valori di misure negative che vanno espulse ETL
+select *
+from silver.o3 as o
+where o.valore < 0;
+
+-- distribuzione per valori delle misure di CO
+select n.valore, count(n.um) 
+from silver.co n  
+--where Extract(year from p.data_fine::date) = 2025
+group by n.valore 
+order by n.valore;
 
 
 
