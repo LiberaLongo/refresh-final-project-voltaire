@@ -702,40 +702,49 @@ from silver.pm25 p
 group by anno
 order by anno;
 
--- distribuzione per valori delle misure di PM10 o PM2.5 per un anno dato
+-- distribuzione per valori delle misure di PM10 (eventualmente per anno dato)
 select p.valore, count(p.um) 
-from silver.pm25 p 
+from bronze.pm10 p 
 --where Extract(year from p.data_fine::date) = 2025
 group by p.valore 
 order by p.valore;
+-- tutto ok a parte una insolita frequenza di valori == 0
+-- rappresenta una misura statistica distorta ma non influente nel complesso
+
+-- distribuzione per valori delle misure di PM2.5
+select p.valore, count(p.um) 
+from bronze.pm25 p 
+--where Extract(year from p.data_fine::date) = 2025
+group by p.valore 
+order by p.valore;
+-- tutto ok a parte una insolita frequenza di valori == 0
+-- rappresenta una misura statistica distorta ma non influente nel complesso
 
 -- distribuzione per valori delle misure di NO2
 select n.valore, count(n.um) 
-from silver.no2 n  
+from bronze.no2 n  
 --where Extract(year from p.data_fine::date) = 2025
 group by n.valore 
 order by n.valore;
 -- ci sono 172 valori di misure negative che vanno espulse ETL
 select *
-from silver.no2 n
+from bronze.no2 n
 where n.valore <0;
-
-
 
 -- distribuzione per valori delle misure di O3
 select n.valore, count(n.um) 
-from silver.o3 n  
+from bronze.o3 n  
 --where Extract(year from p.data_fine::date) = 2025
 group by n.valore 
 order by n.valore;
 -- ci sono 10 valori di misure negative che vanno espulse ETL
 select *
-from silver.o3 as o
+from bronze.o3 as o
 where o.valore < 0;
 
 -- distribuzione per valori delle misure di CO
 select n.valore, count(n.um) 
-from silver.co n  
+from bronze.co n  
 --where Extract(year from p.data_fine::date) = 2025
 group by n.valore 
 order by n.valore;
