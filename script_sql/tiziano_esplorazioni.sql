@@ -576,21 +576,36 @@ where cod_staz= 9000083 and data_inizio::date = '2024-11-13';
 
 -- verifica dell'unicità delle misure in base a codice stazione data e valore misurato
 select count(*) as conteggio, 'z - totale' as tipo
-from silver.o3 
+from bronze.o3 
 union
 select count(*) as conteggio, 'a - due valori' as tipo 
-from (select distinct cod_staz, data_inizio from silver.o3) 
+from (select distinct cod_staz, data_inizio from bronze.o3) 
 union
 select count(*) as conteggio, 'b - tre valori' as tipo 
-from (select distinct cod_staz, data_inizio, valore from silver.o3)
+from (select distinct cod_staz, data_inizio, valore from bronze.o3)
 order by tipo;
 -- 3957135	a - due valori
 -- 3957460	b - tre valori
 -- 7915056	z - totale
+--
+-- in bronze ci sono comunque disallineamenti ma non come in silver
+-- sono comunque un po' più del doppio, cosa sono?
+-- 3957504	a - due valori
+-- 3957504	b - tre valori
+-- 7915056	z - totale
+
+select count( distinct (o.cod_staz , o.data_inizio , o.data_fine ,
+       o.id_param , o.valore , o.um ))       
+from bronze.o3 o;
+--3957504
+select count( distinct (o.cod_staz , o.data_inizio , o.data_fine ,
+       o.id_param , o.um ))       
+from bronze.o3 o;
 
 
 -- ci sono 325 misure doppie con valori differenti,
 -- questo è un grosso problema, come lo trattiamo?
+-- questo avviene solo in silver per un qualche problema di conversione stringa -> timestamp 
 SELECT
     cod_staz,
     data_inizio,
@@ -656,6 +671,7 @@ HAVING COUNT(DISTINCT valore) > 1
 ORDER BY cod_staz, data_inizio;
 
 -- verifica unicità misure per co
+-- in silver ci sono duplicati
 select count(*) as conteggio, 'z - totale' as tipo
 from silver.co 
 union
@@ -676,6 +692,28 @@ FROM silver.co
 GROUP BY cod_staz, data_inizio
 HAVING COUNT(DISTINCT valore) > 1
 ORDER BY cod_staz, data_inizio;
+
+-- in bronze non ci sono duplicati
+select count(*) as conteggio, 'z - totale' as tipo
+from bronze.co 
+union
+select count(*) as conteggio, 'a - due valori' as tipo 
+from (select distinct cod_staz, data_inizio from bronze.co) 
+union
+select count(*) as conteggio, 'b - tre valori' as tipo 
+from (select distinct cod_staz, data_inizio, valore from bronze.co)
+order by tipo;
+
+SELECT
+    cod_staz,
+    data_inizio,
+    COUNT(DISTINCT valore) AS numero_misure,
+    ARRAY_AGG(DISTINCT valore ORDER BY valore) AS misure
+FROM bronze.co
+GROUP BY cod_staz, data_inizio
+HAVING COUNT(DISTINCT valore) > 1
+ORDER BY cod_staz, data_inizio;
+-- in bronze il problema non si presenta
 
 -- ricerca di outlier in uno staging bollettino giornaliero di esempio
 select sb.variable_id , dp.parametro , 
@@ -750,4 +788,67 @@ group by n.valore
 order by n.valore;
 
 
+--
+-- ESPLORAZIONI DISCORDANZE TIMESTAMP in SILVER
+--
+select *
+from silver.o3 o
+where o.cod_staz = 2000003 and o.data_inizio::text like '%2010-03-28 03%';
+
+select *
+from bronze.o3 o
+where o.cod_staz = 2000003 and o.data_inizio::text like '%31/03/2024%';
+
+select * from bronze.o3 limit 5;
+
+show timezone;
+
+SET DateStyle TO 'ISO, DMY';
+show datestyle;
+
+select count(*), left(o.data_inizio , 10)::date as data 
+from bronze.o3 o 
+where o.cod_staz = 2000003 and 
+	  o.data_inizio::text like '%/2025%' and 
+	  o.data_inizio::text like '%/03/%'
+group by left(o.data_inizio , 10)::date;
+
+
+----------------------------------------------------------------------
+-- analisi problema duplicazioni l'ultima domenica di marzo cambio ora
+-- a parte che ci sono misure doppie generali nei dati in partenza
+-- al netto di ciò i giorni di cambio ora hanno comunque 24 misure
+-- il che non dovrebbe essere perché ci sono solo 23 ore disponibili
+select * from bronze.o3 o
+where (o.data_inizio::text like '%29/03/2025%' or
+      o.data_inizio::text like '%30/03/2025%' or 
+      o.data_inizio::text like '%31/03/2025%')
+      and o.cod_staz = 2000003
+;
+
+-- esplorazione giorni di cambio ora inversa
+select * from bronze.o3 o
+where (o.data_inizio::text like '%25/10/2025%' or
+      o.data_inizio::text like '%26/10/2025%' or 
+      o.data_inizio::text like '%27/10/2025%')
+      and o.cod_staz = 2000003
+;
+
+-- funzionamento della trasformazione to_timestamp
+-- dove si vede chiaramente il comportamento della funzione che accorpa due ore 
+select *,
+       to_timestamp(data_inizio , 'DD/MM/YYYY HH24') as data_inizio,  
+	   to_timestamp(data_inizio , 'DD/MM/YYYY HH24') as data_fine
+from bronze.o3 o
+where o.data_inizio::text like '%30/03/2025%'
+      and o.cod_staz = 2000003
+;
+-- anche il cast a timestamp senza time zone non elimina il problema
+select *,
+       to_timestamp(data_inizio , 'DD/MM/YYYY HH24')::timestamp as data_inizio,  
+	   to_timestamp(data_inizio , 'DD/MM/YYYY HH24')::timestamp as data_fine
+from bronze.o3 o
+where o.data_inizio::text like '%30/03/2025%'
+      and o.cod_staz = 2000003
+;
 
