@@ -780,6 +780,13 @@ select *
 from bronze.o3 as o
 where o.valore < 0;
 
+-- distribuzione per valori delle misure di O3 dopo pulizia ETL
+select o.valore, count(o.um) 
+from silver.o3 o  
+--where Extract(year from p.data_fine::date) = 2025
+group by o.valore 
+order by o.valore;
+
 -- distribuzione per valori delle misure di CO
 select n.valore, count(n.um) 
 from bronze.co n  
