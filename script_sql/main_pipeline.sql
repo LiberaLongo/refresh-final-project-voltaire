@@ -32,7 +32,7 @@ drop table if exists silver.pm10 CASCADE;
 create table silver.pm10 as (
 	SELECT cod_staz, id_param, 
 	to_timestamp(data_inizio , 'DD/MM/YYYY HH24') as data_inizio,  
-	to_timestamp(data_inizio , 'DD/MM/YYYY HH24') as data_fine,
+	to_timestamp(data_fine , 'DD/MM/YYYY HH24') as data_fine,
 	valore, um FROM bronze.pm10
 	);
 
@@ -42,7 +42,7 @@ drop table if exists silver.pm25 CASCADE;
 create table silver.pm25 as (
 	SELECT cod_staz, id_param, 
 	to_timestamp(data_inizio , 'DD/MM/YYYY HH24') as data_inizio,  
-	to_timestamp(data_inizio , 'DD/MM/YYYY HH24') as data_fine,
+	to_timestamp(data_fine , 'DD/MM/YYYY HH24') as data_fine,
 	valore, um FROM bronze.pm25
 	);
 
@@ -53,7 +53,7 @@ drop table if exists silver.no2 CASCADE;
 create table silver.no2 as (
 	SELECT cod_staz, id_param, 
 	to_timestamp(data_inizio , 'DD/MM/YYYY HH24') as data_inizio,  
-	to_timestamp(data_inizio , 'DD/MM/YYYY HH24') as data_fine,
+	to_timestamp(data_fine , 'DD/MM/YYYY HH24') as data_fine,
 	valore, um FROM bronze.no2
 	where valore >= 0
 	);
@@ -98,7 +98,7 @@ drop table if exists silver.co CASCADE;
 create table silver.co as (
 	SELECT cod_staz, id_param, 
 	to_timestamp(data_inizio , 'DD/MM/YYYY HH24') as data_inizio,  
-	to_timestamp(data_inizio , 'DD/MM/YYYY HH24') as data_fine,
+	to_timestamp(data_fine , 'DD/MM/YYYY HH24') as data_fine,
 	valore, um FROM bronze.co
 	);
 
