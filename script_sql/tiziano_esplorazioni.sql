@@ -654,6 +654,21 @@ order by tipo;
 -- 5955088	b - tre valori
 -- 5955256	z - totale
 
+-- verifica unicità misure per no2 dalla tabella origine in bronze
+select count(*) as conteggio, 'z - totale' as tipo
+from bronze.no2 
+union
+select count(*) as conteggio, 'a - due valori' as tipo 
+from (select distinct cod_staz, data_inizio from bronze.no2) 
+union
+select count(*) as conteggio, 'b - tre valori' as tipo 
+from (select distinct cod_staz, data_inizio, valore from bronze.no2)
+order by tipo;
+-- 5955206	a - due valori
+-- 5955206	b - tre valori
+-- 5955256	z - totale
+
+
 select 5955256-5955088 as conteggio, 'discordanze' as tipo
 union
 select 5955256-5954670 as conteggio, 'dupliche' as tipo;
@@ -875,4 +890,21 @@ where not ((left(o.data_inizio , 10) = left (o.data_fine , 10)
 	  and 
 	  not ( to_timestamp(o.data_fine, 'DD/MM/YYYY HH24') = (to_timestamp(o.data_inizio, 'DD/MM/YYYY HH24') + INTERVAL '1 hour'))
 ;
+
+-- verifica simile per la tabella misure NO2
+select * from bronze.no2 n  
+where not ((left(n.data_inizio , 10) = left (n.data_fine , 10) 
+	  and (right(n.data_inizio, 2)::int + 1 = right(n.data_fine, 2)::int)))
+	  and 
+	  not ( to_timestamp(n.data_fine, 'DD/MM/YYYY HH24') = (to_timestamp(n.data_inizio, 'DD/MM/YYYY HH24') + INTERVAL '1 hour'))
+;
+
+-- verifica simile per la tabella misure CO
+select * from bronze.co n  
+where not ((left(n.data_inizio , 10) = left (n.data_fine , 10) 
+	  and (right(n.data_inizio, 2)::int + 1 = right(n.data_fine, 2)::int)))
+	  and 
+	  not ( to_timestamp(n.data_fine, 'DD/MM/YYYY HH24') = (to_timestamp(n.data_inizio, 'DD/MM/YYYY HH24') + INTERVAL '1 hour'))
+;
+
 
