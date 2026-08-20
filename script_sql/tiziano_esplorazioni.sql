@@ -859,3 +859,20 @@ where o.data_inizio::text like '%30/03/2025%'
       and o.cod_staz = 2000003
 ;
 
+-- verifica che data_inizio e data_fine siano correttamente posizionate in tutto il dataset
+select distinct o.id_param from silver.o3 o ;
+select distinct o.um from silver.o3 o ;
+
+select left(o.data_inizio , 10), right(o.data_inizio, 2)::int from silver.o3 o 
+limit 10;
+
+-- c'è sempre la differenza di un'ora
+-- i due campi sono ridondanti, è possibile eliminarne uno senza 
+-- perdita di informazione
+select * from silver.o3 o 
+where not ((left(o.data_inizio , 10) = left (o.data_fine , 10) 
+	  and (right(o.data_inizio, 2)::int + 1 = right(o.data_fine, 2)::int)))
+	  and 
+	  not ( to_timestamp(o.data_fine, 'DD/MM/YYYY HH24') = (to_timestamp(o.data_inizio, 'DD/MM/YYYY HH24') + INTERVAL '1 hour'))
+;
+

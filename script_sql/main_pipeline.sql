@@ -85,12 +85,24 @@ create table silver.o3_02 as (
 	select distinct cod_staz, id_param, data_inizio, data_fine, valore, um 
 	from silver.o3_01
 	);
+-- terza ETL si elimina un campo ridondante data_fine
+--           si definisce data_inizio come sola data -> left (data_inizio, 10)
+-- 			 si definisce un nuovo campo "ora" con l'ora mappando (00 .. 23) -> (0 ..23) 
+drop table if exists silver.o3_03;
+create table silver.o3_03 as (
+	select cod_staz, id_param,
+	to_timestamp(left(data_inizio, 10), 'DD/MM/YYYY' )::date as data_inizio,
+	right(data_inizio, 2)::int4 as ora_inizio,
+	valore, um
+	from silver.o3_02
+);
+
 -- riporto dell'ultima tabella nella definitiva silver.o3
 drop table if exists silver.o3;
 create table silver.o3 as (
-	select cod_staz, id_param, data_inizio, data_fine, valore, um from silver.o3_02 as o
+	select cod_staz, id_param, data_inizio, ora_inizio, valore, um from silver.o3_03 as o
 	);
-	
+
 
 -- costruzione della tabella storici per CO in silver
 -- conversione dei dati tempo in tipo timestamp
