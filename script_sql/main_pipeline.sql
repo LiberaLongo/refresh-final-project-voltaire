@@ -60,7 +60,6 @@ create table silver.pm25 as (
 	valore, um from silver.pm25_01
 );
 
-
 -- costruzione della tabella storici per NO2 in silver
 -- prima ETL si escludono i valori di misura < 0
 drop table if exists silver.no2_01;
@@ -97,7 +96,7 @@ drop table if exists silver.no2;
 create table silver.no2 as ( 
 	SELECT cod_staz, id_param, data_inizio, ora_inizio, valore, um
 	FROM silver.no2_03
-)
+);
 
 -- costruzione della tabella storici per O3 in silver
 -- prima ETL si escludono i valori di misura < 0
@@ -165,58 +164,58 @@ create view gold.mappa_geografica_stazioni as (
 -- creazione view di valori medi annuali per provincia per anno del parametro PM10
 drop view if exists gold.pm10_medie_annuali_provincie;
 create view gold.pm10_medie_annuali_provincie as (
-	select ds.provincia, EXTRACT(YEAR FROM p.data_inizio) as anno,
+	select ds.provincia, EXTRACT(YEAR FROM p.data) as anno,
 		dp.parametro, avg(p.valore) as media_annuale, p.um 
 	from silver.pm10 p 
 	join silver.dim_stazioni ds on p.cod_staz = ds.cod_staz 
 	join silver.dim_parametri dp on dp.id_parametro = p.id_param 
 	where dp.parametro = 'PM10'  
-	group by provincia, parametro, EXTRACT(YEAR FROM p.data_inizio), p.um
+	group by provincia, parametro, EXTRACT(YEAR FROM p.data), p.um
 );
 
 -- creazione view di valori medi mensili per provincia per mese+anno del parametro PM10
 drop view if exists gold.pm10_medie_mensili_provincie;
 create view gold.pm10_medie_mensili_provincie as (
 	select ds.provincia, 
-		EXTRACT(YEAR FROM p.data_inizio) as anno,
-		EXTRACT(MONTH FROM p.data_inizio) as mese,
+		EXTRACT(YEAR FROM p.data) as anno,
+		EXTRACT(MONTH FROM p.data) as mese,
 		dp.parametro, avg(p.valore) as media_annuale, p.um 
 	from silver.pm10 p 
 	join silver.dim_stazioni ds on p.cod_staz = ds.cod_staz 
 	join silver.dim_parametri dp on dp.id_parametro = p.id_param 
 	where dp.parametro = 'PM10'  
 	group by provincia, parametro, 
-			EXTRACT(YEAR FROM p.data_inizio), 
-			EXTRACT(MONTH FROM p.data_inizio),
+			EXTRACT(YEAR FROM p.data), 
+			EXTRACT(MONTH FROM p.data),
 			p.um
 );
 
 -- creazione view di valori medi annuali per provincia per anno del parametro PM2.5
 drop view if exists gold.pm25_medie_annuali_provincie;
 create view gold.pm25_medie_annuali_provincie as (
-	select ds.provincia, EXTRACT(YEAR FROM p.data_inizio) as anno,
+	select ds.provincia, EXTRACT(YEAR FROM p.data) as anno,
 		dp.parametro, avg(p.valore) as media_annuale, p.um 
 	from silver.pm25 p 
 	join silver.dim_stazioni ds on p.cod_staz = ds.cod_staz 
 	join silver.dim_parametri dp on dp.id_parametro = p.id_param 
 	where dp.parametro = 'PM2.5'  
-	group by provincia, parametro, EXTRACT(YEAR FROM p.data_inizio), p.um
+	group by provincia, parametro, EXTRACT(YEAR FROM p.data), p.um
 );
 
 -- creazione view di valori medi mensili per provincia per mese+anno del parametro PM2.5
 drop view if exists gold.pm25_medie_mensili_provincie;
 create view gold.pm25_medie_mensili_provincie as (
 	select ds.provincia, 
-		EXTRACT(YEAR FROM p.data_inizio) as anno,
-		EXTRACT(MONTH FROM p.data_inizio) as mese,
+		EXTRACT(YEAR FROM p.data) as anno,
+		EXTRACT(MONTH FROM p.data) as mese,
 		dp.parametro, avg(p.valore) as media_annuale, p.um 
 	from silver.pm25 p 
 	join silver.dim_stazioni ds on p.cod_staz = ds.cod_staz 
 	join silver.dim_parametri dp on dp.id_parametro = p.id_param 
 	where dp.parametro = 'PM2.5'  
 	group by provincia, parametro, 
-			EXTRACT(YEAR FROM p.data_inizio), 
-			EXTRACT(MONTH FROM p.data_inizio),
+			EXTRACT(YEAR FROM p.data), 
+			EXTRACT(MONTH FROM p.data),
 			p.um
 );
 
