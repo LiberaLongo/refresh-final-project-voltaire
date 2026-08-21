@@ -47,14 +47,11 @@ create table silver.pm25 as (
 	);
 
 -- costruzione della tabella storici per NO2 in silver
--- conversione dei dati tempo in tipo timestamp
 -- prima ETL si escludono i valori di misura < 0
-drop table if exists silver.no2 CASCADE;
-create table silver.no2 as (
-	SELECT cod_staz, id_param, 
-	to_timestamp(data_inizio , 'DD/MM/YYYY HH24') as data_inizio,  
-	to_timestamp(data_fine , 'DD/MM/YYYY HH24') as data_fine,
-	valore, um FROM bronze.no2
+drop table if exists silver.no2_01;
+create table silver.no2_01 as (
+	SELECT cod_staz, id_param, data_inizio,  data_fine, valore, um 
+	FROM bronze.no2
 	where valore >= 0
 	);
 -- i valori di misura < 0 vengono riportati in tabella ETL_errata
@@ -63,6 +60,30 @@ create table silver.etl_errata_no2 as (
 	select * from bronze.no2
 	where valore < 0
 	);
+-- seconda ETL si eliminano le righe duplicate
+drop table if exists silver.no2_02;
+create table silver.no2_02 as ( 
+	SELECT distinct cod_staz, id_param, data_inizio, data_fine, valore, um 
+	FROM silver.no2_01
+);
+-- terza ETL si elimina un campo ridondante data_fine
+--           si definisce data_inizio come sola data -> left (data_inizio, 10)
+-- 			 si definisce un nuovo campo "ora" con l'ora mappando (00 .. 23) -> (0 ..23) 
+drop table if exists silver.no2_03;
+create table silver.no2_03 as (
+	select cod_staz, id_param,
+	to_timestamp(left(data_inizio, 10), 'DD/MM/YYYY' )::date as data_inizio,
+	right(data_inizio, 2)::int4 as ora_inizio,
+	valore, um
+	from silver.no2_02
+);
+-- riporto dell'ultima tabella nella definitiva silver.no2
+drop table if exists silver.no2;
+create table silver.no2 as ( 
+	SELECT cod_staz, id_param, data_inizio, ora_inizio, valore, um
+	FROM silver.no2_03
+)
+
 
 -- costruzione della tabella storici per O3 in silver
 -- prima ETL si escludono i valori di misura < 0

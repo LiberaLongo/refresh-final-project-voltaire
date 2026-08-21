@@ -667,7 +667,7 @@ order by tipo;
 -- 5955206	a - due valori
 -- 5955206	b - tre valori
 -- 5955256	z - totale
-
+-- ci sono 50 dupliche?
 
 select 5955256-5955088 as conteggio, 'discordanze' as tipo
 union
@@ -684,6 +684,26 @@ FROM silver.no2
 GROUP BY cod_staz, data_inizio
 HAVING COUNT(DISTINCT valore) > 1
 ORDER BY cod_staz, data_inizio;
+
+-- ricerca delle dupliche nel caso bronze.no2
+SELECT
+    cod_staz,
+    data_inizio,
+    COUNT(*) AS numero_righe
+FROM bronze.no2
+GROUP BY cod_staz, data_inizio
+HAVING COUNT(*) > 1
+ORDER BY cod_staz, data_inizio;
+-- il codice stazione 8000038 dal 17/09/2012 00 al 19/09/2012 06
+-- ha misure duplicate e sono esattamente 50
+
+select * 
+from bronze.no2 n 
+where cod_staz = 8000038 and 
+      (data_inizio like '%17/09/2012%' or
+       data_inizio like '%18/09/2012%' or
+       data_inizio like '%19/09/2012%')
+;
 
 -- verifica unicità misure per co
 -- in silver ci sono duplicati
