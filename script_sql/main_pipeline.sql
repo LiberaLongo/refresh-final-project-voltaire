@@ -84,7 +84,6 @@ create table silver.no2 as (
 	FROM silver.no2_03
 )
 
-
 -- costruzione della tabella storici per O3 in silver
 -- prima ETL si escludono i valori di misura < 0
 drop table if exists silver.o3_01;
@@ -126,13 +125,15 @@ create table silver.o3 as (
 
 
 -- costruzione della tabella storici per CO in silver
--- conversione dei dati tempo in tipo timestamp
+-- conversione dei dati tempo in tipo timestamp::date
+-- cancellazione della data_fine e creazione colonna ora_inizio
 drop table if exists silver.co CASCADE;
 create table silver.co as (
 	SELECT cod_staz, id_param, 
-	to_timestamp(data_inizio , 'DD/MM/YYYY HH24') as data_inizio,  
-	to_timestamp(data_fine , 'DD/MM/YYYY HH24') as data_fine,
-	valore, um FROM bronze.co
+	to_timestamp(left(data_inizio, 10), 'DD/MM/YYYY' )::date as data_inizio,
+	right(data_inizio, 2)::int4 as ora_inizio,
+	valore, um 
+	FROM bronze.co
 	);
 
 

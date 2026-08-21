@@ -705,6 +705,16 @@ where cod_staz = 8000038 and
        data_inizio like '%19/09/2012%')
 ;
 
+-- stesse verifiche di cui sopra per CO
+select count(*), 'conteggio totale' as tipo 
+from bronze.co c 
+union 
+select count(distinct (cod_staz, data_inizio)), 'due valori' as tipo
+from bronze.co;
+-- 1028189	conteggio totale
+-- 1028189	due valori
+-- non ci sono errori di duplicazione misure 
+-- questa verifica mi pare di averla già fatta
 -- verifica unicità misure per co
 -- in silver ci sono duplicati
 select count(*) as conteggio, 'z - totale' as tipo
