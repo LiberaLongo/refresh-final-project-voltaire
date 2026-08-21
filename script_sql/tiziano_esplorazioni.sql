@@ -715,6 +715,7 @@ from bronze.co;
 -- 1028189	due valori
 -- non ci sono errori di duplicazione misure 
 -- questa verifica mi pare di averla già fatta
+
 -- verifica unicità misure per co
 -- in silver ci sono duplicati
 select count(*) as conteggio, 'z - totale' as tipo
@@ -937,4 +938,30 @@ where not ((left(n.data_inizio , 10) = left (n.data_fine , 10)
 	  not ( to_timestamp(n.data_fine, 'DD/MM/YYYY HH24') = (to_timestamp(n.data_inizio, 'DD/MM/YYYY HH24') + INTERVAL '1 hour'))
 ;
 
+-- ci sono righe duplicate in pm10 e pm25?
+select count(*), 'conteggi totali' as tipo
+from bronze.pm10
+union
+select count ( distinct (cod_staz, data_inizio)), 'distinti' as tipo 
+from bronze.pm10
+;
+-- 2 duplicati
+
+select count(*), 'conteggi totali' as tipo
+from bronze.pm25
+union
+select count ( distinct (cod_staz, data_inizio)), 'distinti' as tipo 
+from bronze.pm25
+;
+-- nessun duplicato
+
+select p.cod_staz , p.data_inizio, count(*)
+from bronze.pm10 p 
+group by p.cod_staz , p.data_inizio 
+having count(*) > 1;
+
+select * from bronze.pm10 p 
+where (p.cod_staz = 2000003 and p.data_inizio = '04/06/2024 00') 
+      or (p.cod_staz = 8000002 and p.data_inizio = '16/12/2024 00')
+;
 

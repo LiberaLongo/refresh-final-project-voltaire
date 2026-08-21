@@ -27,24 +27,39 @@ create table silver.dim_parametri as (
 	order by id_parametro);
 
 -- costruzione della tabella storici per PM10 in silver
--- conversione dei dati tempo in tipo timestamp
-drop table if exists silver.pm10 CASCADE;
+-- eliminazione di righe duplicate
+drop table if exists silver.pm10_01;
+create table silver.pm10_01 as (
+	select distinct cod_staz, id_param, data_inizio, data_fine, valore, um
+	from bronze.pm10
+);
+-- ETL modifica colonne data e ora 
+-- e riporto in tabella finale
+drop table if exists silver.pm10;
 create table silver.pm10 as (
-	SELECT cod_staz, id_param, 
-	to_timestamp(data_inizio , 'DD/MM/YYYY HH24') as data_inizio,  
-	to_timestamp(data_fine , 'DD/MM/YYYY HH24') as data_fine,
-	valore, um FROM bronze.pm10
-	);
+	select cod_staz, id_param,
+	to_timestamp(left(data_inizio, 10), 'DD/MM/YYYY' )::date as data,
+	right(data_inizio, 2)::int4 as ora,
+	valore, um from silver.pm10_01
+);
 
 -- costruzione della tabella storici per PM25 in silver
--- conversione dei dati tempo in tipo timestamp
-drop table if exists silver.pm25 CASCADE;
+-- eliminazione di righe duplicate
+drop table if exists silver.pm25_01;
+create table silver.pm25_01 as (
+	select distinct cod_staz, id_param, data_inizio, data_fine, valore, um
+	from bronze.pm25
+);
+-- ETL modifica colonne data e ora 
+-- e riporto in tabella finale
+drop table if exists silver.pm25;
 create table silver.pm25 as (
-	SELECT cod_staz, id_param, 
-	to_timestamp(data_inizio , 'DD/MM/YYYY HH24') as data_inizio,  
-	to_timestamp(data_fine , 'DD/MM/YYYY HH24') as data_fine,
-	valore, um FROM bronze.pm25
-	);
+	select cod_staz, id_param,
+	to_timestamp(left(data_inizio, 10), 'DD/MM/YYYY' )::date as data,
+	right(data_inizio, 2)::int4 as ora,
+	valore, um from silver.pm25_01
+);
+
 
 -- costruzione della tabella storici per NO2 in silver
 -- prima ETL si escludono i valori di misura < 0
