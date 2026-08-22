@@ -68,7 +68,6 @@ def my_main_debug():
 	return
 
 def up_bollettini():
-	if True: return
 	# legge le variabili di ambiente per la connessione al db
 	HOST = os.getenv("DB_HOST")
 	PORT = os.getenv("DB_PORT")
