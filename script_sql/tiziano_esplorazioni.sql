@@ -965,3 +965,130 @@ where (p.cod_staz = 2000003 and p.data_inizio = '04/06/2024 00')
       or (p.cod_staz = 8000002 and p.data_inizio = '16/12/2024 00')
 ;
 
+------------------------------------------------------------
+-- altre cose -- esempio di uso di funzioni sql
+--            -- preparazione di idw
+------------------------------------------------------------
+drop function distanza;
+create or replace function silver.distanza (
+	x1 double precision,
+	y1 double precision,
+	x2 double precision,
+	y2 double precision)
+returns double precision
+language sql
+as $$
+	select sqrt( 
+		power (x2 - x1, 2) +
+		power (y2 - y1, 2)
+	);
+$$
+
+select silver.distanza(0, 0, 1, 1);
+
+-- verifica che un comune sia compreso tra tre centraline corrette
+-- San Giovanni in Persiceto
+select mctp.istat, 
+       mctp.comune ,
+       mctp.id_triangolo, 
+       tp.v1 as vertice1, 
+       tp.v2 as vertice2, 
+       tp.v3 as vertice3,
+       sp1.cod_staz as staz_1,
+       sp2.cod_staz as staz_2,
+       sp3.cod_staz as staz_3,
+       silver.distanza(mctp.coord_x, mctp.coord_y, sp1.c_x, sp1.c_y) as dist_vertice1,
+       silver.distanza(mctp.coord_x, mctp.coord_y, sp2.c_x, sp2.c_y) as dist_vertice2,
+       silver.distanza(mctp.coord_x, mctp.coord_y, sp3.c_x, sp3.c_y) as dist_vertice3
+from bronze.mappa_comuni_triangoli_pm10 mctp
+join bronze.triangoli_pm10 tp on mctp.id_triangolo = tp.id_triangolo
+join bronze.stazioni_pm10 sp1 on tp.v1 =sp1.id_staz 
+join bronze.stazioni_pm10 sp2 on tp.v2 =sp2.id_staz 
+join bronze.stazioni_pm10 sp3 on tp.v3 =sp3.id_staz 
+where mctp.istat = 37053;
+
+-- vorrei trovare i tre valori, ad una data stabilita, delle tre centraline 
+-- nel simplesso interessato
+-- devo joinare tre volte, una per vertice, con la tabella bollettini
+with bollettino as (
+	select station_id, value
+	from silver.bollettini
+	where variable_id = 5 and reftime like '%08/07/2026%')
+select mctp.istat, 
+       mctp.comune ,
+       mctp.id_triangolo, 
+       tp.v1 as vertice1, 
+       tp.v2 as vertice2, 
+       tp.v3 as vertice3,
+       sp1.cod_staz as staz_1,
+       sp2.cod_staz as staz_2,
+       sp3.cod_staz as staz_3,
+       silver.distanza(mctp.coord_x, mctp.coord_y, sp1.c_x, sp1.c_y) as dist_vertice1,
+       silver.distanza(mctp.coord_x, mctp.coord_y, sp2.c_x, sp2.c_y) as dist_vertice2,
+       silver.distanza(mctp.coord_x, mctp.coord_y, sp3.c_x, sp3.c_y) as dist_vertice3,
+       b1.value as val_staz_1,
+       b2.value as val_staz_2,
+       b3.value as val_staz_3
+from bronze.mappa_comuni_triangoli_pm10 mctp
+join bronze.triangoli_pm10 tp on mctp.id_triangolo = tp.id_triangolo
+join bronze.stazioni_pm10 sp1 on tp.v1 =sp1.id_staz 
+join bronze.stazioni_pm10 sp2 on tp.v2 =sp2.id_staz 
+join bronze.stazioni_pm10 sp3 on tp.v3 =sp3.id_staz 
+join bollettino as b1 on b1.station_id = sp1.cod_staz 
+join bollettino as b2 on b2.station_id = sp2.cod_staz 
+join bollettino as b3 on b3.station_id = sp3.cod_staz 
+where mctp.istat = 37053;
+
+-- la stazione 4000002 non ha rilevamenti nei giorni prima del 7 agosto
+select * from bronze.stazioni_pm10 as s
+join silver.bollettini b on b.station_id = s.cod_staz 
+where variable_id = 5 and b.reftime like '%08/07/2026%' and 
+      (s.cod_staz = 7000041 or s.cod_staz = 8000038 or s.cod_staz = 4000002)
+;
+
+
+-- PRIMO TEST DI STIMA INQUINAMENTO PER UNO SPECIFICO COMUNE
+-- prova di estrazione della media del valore di inquinamento 
+-- CASO NON PESATA CON IDW
+with tempo as (with bollettino as (
+	select station_id, value
+	from silver.bollettini
+	where variable_id = 5 and reftime like '%08/07/2026%')
+select mctp.istat, 
+       mctp.comune ,
+       mctp.id_triangolo, 
+       tp.v1 as vertice1, 
+       tp.v2 as vertice2, 
+       tp.v3 as vertice3,
+       sp1.cod_staz as staz_1,
+       sp2.cod_staz as staz_2,
+       sp3.cod_staz as staz_3,
+       silver.distanza(mctp.coord_x, mctp.coord_y, sp1.c_x, sp1.c_y) as dist_vertice1,
+       silver.distanza(mctp.coord_x, mctp.coord_y, sp2.c_x, sp2.c_y) as dist_vertice2,
+       silver.distanza(mctp.coord_x, mctp.coord_y, sp3.c_x, sp3.c_y) as dist_vertice3,
+       b1.value as val_staz_1,
+       b2.value as val_staz_2,
+       b3.value as val_staz_3
+from bronze.mappa_comuni_triangoli_pm10 mctp
+join bronze.triangoli_pm10 tp on mctp.id_triangolo = tp.id_triangolo
+join bronze.stazioni_pm10 sp1 on tp.v1 =sp1.id_staz 
+join bronze.stazioni_pm10 sp2 on tp.v2 =sp2.id_staz 
+join bronze.stazioni_pm10 sp3 on tp.v3 =sp3.id_staz 
+join bollettino as b1 on b1.station_id = sp1.cod_staz 
+join bollettino as b2 on b2.station_id = sp2.cod_staz 
+join bollettino as b3 on b3.station_id = sp3.cod_staz 
+where mctp.istat = 37053)
+select comune, (val_staz_1 + val_staz_2 + val_staz_3)/3. as stima_inquinamento
+from tempo
+;
+
+
+
+select * from bronze.mappa_comuni_triangoli_pm10 mctp ;
+
+select * from bronze.stazioni_pm10 sp 
+
+-- per caso python è disponibile in postgres?
+SELECT *
+FROM pg_available_extensions
+;
