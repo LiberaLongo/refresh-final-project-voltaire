@@ -969,7 +969,6 @@ where (p.cod_staz = 2000003 and p.data_inizio = '04/06/2024 00')
 -- altre cose -- esempio di uso di funzioni sql
 --            -- preparazione di idw
 ------------------------------------------------------------
-drop function silver.distanza;
 create or replace function silver.distanza (
 	x1 double precision,
 	y1 double precision,
@@ -977,6 +976,9 @@ create or replace function silver.distanza (
 	y2 double precision)
 returns double precision
 language sql
+IMMUTABLE
+STRICT
+PARALLEL SAFE
 as $$
 	select sqrt( 
 		power (x2 - x1, 2) +
@@ -986,7 +988,6 @@ $$
 
 select silver.distanza(0, 0, 1, 1);
 
-drop function if exists silver.media_idw;
 create or replace function silver.media_idw (
 	v1 double precision,
 	d1 double precision,
@@ -996,8 +997,19 @@ create or replace function silver.media_idw (
 	d3 double precision)
 returns double precision
 language sql
+IMMUTABLE
+STRICT
+PARALLEL SAFE
 as $$
-	select ((v1/(d1*d1) + v2/(d2*d2) + v3/(d3*d3)) / ( 1/(d1*d1) + 1/(d2*d2) + 1/(d3*d3)));
+	WITH pesi AS (
+        SELECT
+            1.0 / (d1 * d1) AS w1,
+            1.0 / (d2 * d2) AS w2,
+            1.0 / (d3 * d3) AS w3
+    )
+	SELECT
+        (v1 * w1 + v2 * w2 + v3 * w3) / (w1 + w2 + w3)
+    FROM pesi;
 $$
 
 -- verifica che un comune sia compreso tra tre centraline corrette
