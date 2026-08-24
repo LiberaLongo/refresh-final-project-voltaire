@@ -969,7 +969,7 @@ where (p.cod_staz = 2000003 and p.data_inizio = '04/06/2024 00')
 -- altre cose -- esempio di uso di funzioni sql
 --            -- preparazione di idw
 ------------------------------------------------------------
-drop function distanza;
+drop function silver.distanza;
 create or replace function silver.distanza (
 	x1 double precision,
 	y1 double precision,
@@ -985,6 +985,20 @@ as $$
 $$
 
 select silver.distanza(0, 0, 1, 1);
+
+drop function if exists silver.media_idw;
+create or replace function silver.media_idw (
+	v1 double precision,
+	d1 double precision,
+	v2 double precision,
+	d2 double precision,
+	v3 double precision,
+	d3 double precision)
+returns double precision
+language sql
+as $$
+	select ((v1/(d1*d1) + v2/(d2*d2) + v3/(d3*d3)) / ( 1/(d1*d1) + 1/(d2*d2) + 1/(d3*d3)));
+$$
 
 -- verifica che un comune sia compreso tra tre centraline corrette
 -- San Giovanni in Persiceto
@@ -1011,11 +1025,12 @@ where mctp.istat = 37053;
 -- nel simplesso interessato
 -- devo joinare tre volte, una per vertice, con la tabella bollettini
 with bollettino as (
-	select station_id, value
+	select station_id, value, reftime
 	from silver.bollettini
 	where variable_id = 5 and reftime like '%08/07/2026%')
 select mctp.istat, 
-       mctp.comune ,
+       mctp.comune,
+       b1.reftime,
        mctp.id_triangolo, 
        tp.v1 as vertice1, 
        tp.v2 as vertice2, 
@@ -1047,15 +1062,16 @@ where variable_id = 5 and b.reftime like '%08/07/2026%' and
 ;
 
 
--- PRIMO TEST DI STIMA INQUINAMENTO PER UNO SPECIFICO COMUNE
+-- SECONDO TEST DI STIMA INQUINAMENTO PER UNO SPECIFICO COMUNE
 -- prova di estrazione della media del valore di inquinamento 
--- CASO NON PESATA CON IDW
+-- CASO PESATA CON IDW - utilizzo della funzione silver.media_idw()
 with tempo as (with bollettino as (
-	select station_id, value
+	select station_id, value, reftime
 	from silver.bollettini
 	where variable_id = 5 and reftime like '%08/07/2026%')
 select mctp.istat, 
-       mctp.comune ,
+       mctp.comune,
+       b1.reftime,
        mctp.id_triangolo, 
        tp.v1 as vertice1, 
        tp.v2 as vertice2, 
@@ -1078,7 +1094,11 @@ join bollettino as b1 on b1.station_id = sp1.cod_staz
 join bollettino as b2 on b2.station_id = sp2.cod_staz 
 join bollettino as b3 on b3.station_id = sp3.cod_staz 
 where mctp.istat = 37053)
-select comune, (val_staz_1 + val_staz_2 + val_staz_3)/3. as stima_inquinamento
+select comune, reftime, 
+       silver.media_idw(val_staz_1, dist_vertice1,
+                        val_staz_2, dist_vertice2,
+                        val_staz_3, dist_vertice3) 
+       as stima_inquinamento
 from tempo
 ;
 
