@@ -1107,10 +1107,11 @@ join bollettino as b2 on b2.station_id = sp2.cod_staz
 join bollettino as b3 on b3.station_id = sp3.cod_staz 
 where mctp.istat = 37053)
 select comune, reftime, 
-       silver.media_idw(val_staz_1, dist_vertice1,
+       round (silver.media_idw(val_staz_1, dist_vertice1,
                         val_staz_2, dist_vertice2,
-                        val_staz_3, dist_vertice3) 
-       as stima_inquinamento
+                        val_staz_3, dist_vertice3)::numeric, 0)
+       as stima_inquinamento_pm10,
+       'ug/m3' as "unità di misura"
 from tempo
 ;
 
