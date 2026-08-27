@@ -1125,3 +1125,82 @@ select * from bronze.stazioni_pm10 sp
 SELECT *
 FROM pg_available_extensions
 ;
+
+
+
+-- ------------------------------------
+-- verifica della costanza delle misure
+-- ------------------------------------
+
+-- quanti giorni nel bollettini
+with tabella as 
+(select min(b.reftime ), max(b.reftime ),
+       to_timestamp(min(b.reftime), 'MM/DD/YYYY HH24')::date as data_minima,
+       to_timestamp(max(b.reftime), 'MM/DD/YYYY HH24')::date as data_massima
+from silver.bollettini as b)
+select data_massima - data_minima
+from tabella;
+
+-- parametro PM10 
+select b.station_id , count(b.value ) as n_misure
+from silver.bollettini b 
+where b.variable_id = 5
+group by b.station_id 
+order by n_misure DESC ;
+-- le stazioni funzionanti all'estate 2026 sono 42 e non 51 come si è costruita la triangolazione Delaunay
+-- bisogna quindi rivedere tutt
+with tavola as (
+select b.station_id , count(b.value ) as n_misure
+from silver.bollettini b 
+where b.variable_id = 5
+group by b.station_id 
+order by b.station_id
+)
+select station_id, round(n_misure/66., 2) as perc_mis
+from tavola
+order by perc_mis DESC;
+
+
+-- parametro Ozono
+with tavola as (
+select b.station_id , count(b.value ) as n_misure
+from silver.bollettini b 
+where b.variable_id = 7
+group by b.station_id 
+order by b.station_id
+)
+select station_id, n_misure 
+from tavola
+order by n_misure DESC;
+
+select 1462/1550.* 100;
+
+select b.station_id , count(b.value ) as n_misure
+from silver.bollettini b 
+where b.variable_id = 128
+group by b.station_id 
+order by b.station_id ;
+
+-- quali sono i parametri differenti rilasciati nei bollettini?
+select distinct variable_id, dp.parametro 
+from silver.bollettini b 
+join silver.dim_parametri dp on dp.id_parametro = b.variable_id ;
+-- 1	SO2 (Biossido di zolfo)
+-- 5	PM10
+-- 7	O3 (Ozono)
+-- 8	NO2 (Biossido di azoto)
+-- 9	NOX (Ossidi di azoto)
+-- 10	CO (Monossido di carbonio)
+-- 20	C6H6 (Benzene)
+-- 21	C6H5-CH3 (Toluene)
+-- 38	NO (Monossido di azoto)
+-- 82	C6H4(CH3)2 (o-xylene)
+-- 111	PM2.5
+
+
+
+-- verificare nelle tabelle degli storici se ci sono stazioni che non sono più attive
+select p.cod_staz , ds.comune , ds.indirizzo , ds.provincia  ,  min(data) as inizio_misure, max(data) as fine_misure  from silver.pm10 as p
+join silver.dim_stazioni ds on ds.cod_staz = p.cod_staz 
+group by p.cod_staz, ds.comune , ds.indirizzo , ds.provincia
+order by max(data);
