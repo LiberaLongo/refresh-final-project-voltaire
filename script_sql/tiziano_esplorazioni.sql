@@ -1200,7 +1200,55 @@ join silver.dim_parametri dp on dp.id_parametro = b.variable_id ;
 
 
 -- verificare nelle tabelle degli storici se ci sono stazioni che non sono più attive
+-- pm10
 select p.cod_staz , ds.comune , ds.indirizzo , ds.provincia  ,  min(data) as inizio_misure, max(data) as fine_misure  from silver.pm10 as p
 join silver.dim_stazioni ds on ds.cod_staz = p.cod_staz 
 group by p.cod_staz, ds.comune , ds.indirizzo , ds.provincia
 order by max(data);
+-- 6 stazioni dismesse
+
+-- pm25
+select p.cod_staz , ds.comune , ds.indirizzo , ds.provincia  ,  
+       min(data) as inizio_misure, max(data) as fine_misure  
+       from silver.pm25 as p
+join silver.dim_stazioni ds on ds.cod_staz = p.cod_staz 
+group by p.cod_staz, ds.comune , ds.indirizzo , ds.provincia
+order by max(data);
+-- 5 stazioni dismesse
+
+-- O3 ozono
+select p.cod_staz , ds.comune , ds.indirizzo , ds.provincia  ,  
+       min(p.data_inizio ) as inizio_misure, max(p.data_inizio ) as fine_misure  
+       from silver.o3 as p
+join silver.dim_stazioni ds on ds.cod_staz = p.cod_staz 
+group by p.cod_staz, ds.comune , ds.indirizzo , ds.provincia
+order by max(p.data_inizio );
+-- 1 sola stazione dismessa a Villa Minozzo
+
+-- biossido di azoto no2
+select p.cod_staz , ds.comune , ds.indirizzo , ds.provincia  ,  
+       min(p.data_inizio ) as inizio_misure, max(p.data_inizio ) as fine_misure  
+       from silver.no2 as p
+join silver.dim_stazioni ds on ds.cod_staz = p.cod_staz 
+group by p.cod_staz, ds.comune , ds.indirizzo , ds.provincia
+order by max(p.data_inizio );
+-- 4 stazioni dismesse
+
+-- co monossido di carbonio
+select p.cod_staz , ds.comune , ds.indirizzo , ds.provincia  ,  
+       min(p.data_inizio ) as inizio_misure, max(p.data_inizio ) as fine_misure  
+       from silver.co as p
+join silver.dim_stazioni ds on ds.cod_staz = p.cod_staz 
+group by p.cod_staz, ds.comune , ds.indirizzo , ds.provincia
+order by max(p.data_inizio );
+-- 9 stazioni dismesse
+
+-- verifiche nei bollettini delle stazioni attive nel 2026
+-- numero di stazioni attive per parametro di inquinamento
+select b.variable_id, dp.parametro , count (distinct(b.station_id )) 
+from silver.bollettini b
+join silver.dim_parametri dp on dp.id_parametro = b.variable_id 
+group by b.variable_id , dp.parametro 
+order by b.variable_id ;
+
+
