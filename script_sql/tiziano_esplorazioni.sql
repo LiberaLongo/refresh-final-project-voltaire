@@ -1251,4 +1251,41 @@ join silver.dim_parametri dp on dp.id_parametro = b.variable_id
 group by b.variable_id , dp.parametro 
 order by b.variable_id ;
 
+-- negli storici, dal 2020 al 2025 inclusi, 6 anni
+-- verificare per ogni stazione e per ogni parametro
+-- la percentuale delle misure sul totale teorico
+select p.cod_staz , round(count(p.valore ) / 2192. *100 , 2) as perc_misure
+from silver.pm10 p 
+where p."data" >= '2020-01-01'::date and p."data" <= '2025-12-31'::date
+group by p.cod_staz 
+order by perc_misure DESC;
+
+select '2025-12-31'::date - '2020-01-01'::date ;
+-- 2192 giorni
+select 2192*24;
+-- 52608 ore
+
+select p.cod_staz , round(count(p.valore ) / 2192. *100 , 2) as perc_misure
+from silver.pm25 p 
+where p."data" >= '2020-01-01'::date and p."data" <= '2025-12-31'::date
+group by p.cod_staz 
+order by perc_misure DESC;
+
+select p.cod_staz , round(count(p.valore ) / 52608. *100 , 2) as perc_misure
+from silver.o3 p 
+where p.data_inizio  >= '2020-01-01'::date and p.data_inizio  <= '2025-12-31'::date
+group by p.cod_staz 
+order by perc_misure DESC;
+
+select p.cod_staz , round(count(p.valore ) / 52608. *100 , 2) as perc_misure
+from silver.no2 p 
+where p.data_inizio  >= '2020-01-01'::date and p.data_inizio  <= '2025-12-31'::date
+group by p.cod_staz 
+order by perc_misure DESC;
+
+select p.cod_staz , round(count(p.valore ) / 52608. *100 , 2) as perc_misure
+from silver.co p 
+where p.data_inizio  >= '2020-01-01'::date and p.data_inizio  <= '2025-12-31'::date
+group by p.cod_staz 
+order by perc_misure DESC;
 
