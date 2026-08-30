@@ -151,9 +151,9 @@ def up_forecast():
 			"data_format": "netcdf_zip",
 			"area": [45.2, 9, 43.7, 13]
 		}
-		import tempfile
-		tmp_dir = Path(tempfile.gettempdir())
-		zip_file = tmp_dir / "pm10-forecast.nc.zip"
+		home = Path.home()
+		zip_file = home / "pm10-forecast.nc.zip"
+#       scarica il file zippato nella home
 
 		logging.info("inizio richiesta a Copernico")
 		client = cdsapi.Client()
@@ -161,7 +161,7 @@ def up_forecast():
 		logging.info("fine richiesta a Copernico, ok.")
 
 	finally:
-		# Cancella sempre il file, anche in caso di errore
+		# Cancella sempre il file cdsapirc, anche in caso di errore
 		logging.info("cancellazione file keys")
 		if cdsapirc.exists():
 			cdsapirc.unlink()
@@ -170,7 +170,7 @@ def up_forecast():
 	# passo aggiuntivo unzip del pacchetto scaricato
 	import zipfile
 	with zipfile.ZipFile(zip_file, "r") as zip_ref: 
-		zip_ref.extractall(tmp_dir)
+		zip_ref.extractall(home)
 
 	logging.info("fine unzip del file scaricato")
 
@@ -179,13 +179,10 @@ def up_forecast():
 
 	logging.info("conversione del file in dataframe")
 
-	nc_file = tmp_dir / "ENS_FORECAST.nc"
+	nc_file = home / "ENS_FORECAST.nc"
 	ds = xr.open_dataset(nc_file)
 
 	df = ds.to_dataframe().reset_index()
-
-	# salva in tabella golden.forecast_pm10
-	logging.info("salvataggio data frame in tabella postgres")
 
 	# lettura delle variabili di ambiente - qui voglio usare l'accesso voltoperator
 	host = os.getenv("DB_HOST")
@@ -199,6 +196,7 @@ def up_forecast():
 
 	engine = create_engine(DATABASE_URL)
 
+#   caricamento della tabella su postgres
 	logging.info("caricamento tabella su postgres...")
 	df.to_sql(
 		"forecast_pm10",
