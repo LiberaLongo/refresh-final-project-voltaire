@@ -8,3 +8,6 @@ requests
 pandas
 sqlalchemy
 psycopg2-binary
+cdsapi
+xarray
+netcdf4

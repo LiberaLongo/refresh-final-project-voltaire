@@ -115,3 +115,98 @@ def up_bollettini():
 
 	return
 
+def up_forecast():
+	# Copernico - CAMS - pipeline forecast pm10
+	# download dei dati CAMS (Copernicus Atmosphere Monitoring Service) 
+	# dati ristretti all'area geografica compresa 
+	# tra latitudine 45.2 e 44.0 e longitudine 9.0 e 13.0 (Italia settentrionale).
+
+	import cdsapi
+	from pathlib import Path
+
+	# definisce il file per accesso a Copernicus
+	cdsapirc = Path.home() / ".cdsapirc"
+	logging.info("definisce il nome del file con key accesso")
+
+	try:
+		# Crea il file necessario a cdsapi
+		cdsapirc.write_text(
+			f"""url: https://ads.atmosphere.copernicus.eu/api 
+			key: {os.environ["COPERNICUS_API_KEY"]}
+			"""
+			)
+		logging.info("creato il file key accesso")
+
+		dataset = "cams-europe-air-quality-forecasts"
+
+		request = {
+			"variable": ["particulate_matter_10um"],
+			"model": ["ensemble"],
+			"level": ["0"],
+			"type": ["forecast"],
+			"date": ["2026-08-30"],
+			"time": ["00:00"],
+			"leadtime_hour": [str(i) for i in range(48)], 
+			# si vogliono i valori orari previsti per le ore a venire fino a 96 ore 4 giorni
+			"data_format": "netcdf_zip",
+			"area": [45.2, 9, 43.7, 13]
+		}
+		import tempfile
+		tmp_dir = Path(tempfile.gettempdir())
+		zip_file = tmp_dir / "pm10-forecast.nc.zip"
+
+		logging.info("inizio richiesta a Copernico")
+		client = cdsapi.Client()
+		client.retrieve(dataset, request).download(zip_file)
+		logging.info("fine richiesta a Copernico, ok.")
+
+	finally:
+		# Cancella sempre il file, anche in caso di errore
+		logging.info("cancellazione file keys")
+		if cdsapirc.exists():
+			cdsapirc.unlink()
+		logging.info("fine cancellazione file keys")
+
+	# passo aggiuntivo unzip del pacchetto scaricato
+	import zipfile
+	with zipfile.ZipFile(zip_file, "r") as zip_ref: 
+		zip_ref.extractall(tmp_dir)
+
+	logging.info("fine unzip del file scaricato")
+
+	# lettura del file .nc e conversione in dataframe pandas
+	import xarray as xr
+
+	logging.info("conversione del file in dataframe")
+
+	nc_file = tmp_dir / "ENS_FORECAST.nc"
+	ds = xr.open_dataset(nc_file)
+
+	df = ds.to_dataframe().reset_index()
+
+	# salva in tabella golden.forecast_pm10
+	logging.info("salvataggio data frame in tabella postgres")
+
+	# lettura delle variabili di ambiente - qui voglio usare l'accesso voltoperator
+	host = os.getenv("DB_HOST")
+	port = os.getenv("DB_PORT")
+	db = os.getenv("DB_NAME")
+	user = os.getenv("DB_USER_VOLTOPERATOR")
+	password = os.getenv("DB_PASSWORD_VOLTOPERATOR")
+	logging.info("update_forecast: lettura variabili di ambiente per la connessione al db")
+
+	DATABASE_URL = f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{db}"
+
+	engine = create_engine(DATABASE_URL)
+
+	logging.info("caricamento tabella su postgres...")
+	df.to_sql(
+		"forecast_pm10",
+		engine,
+		schema= "gold",
+		if_exists="replace",
+		index=False
+	)
+	logging.info("caricamento tabella su postgres terminata. OK")
+
+	return

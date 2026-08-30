@@ -3,7 +3,7 @@ import azure.functions as func
 from main import my_main
 
 # aggiunta TT
-from main_debug import my_main_debug, up_bollettini
+from main_debug import my_main_debug, up_bollettini, up_forecast
 
 app = func.FunctionApp()
 
@@ -44,8 +44,9 @@ def http_trigger2_test_tt(req: func.HttpRequest) -> func.HttpResponse:
 
 # eseguo un codice parallelo per debuggare la connesione al db
 #    my_main_debug()
-    up_bollettini()
-    
+#    up_bollettini()
+    up_forecast()
+
     return func.HttpResponse(
         "trigger http 2 terminata correttamente.",
         status_code=200
