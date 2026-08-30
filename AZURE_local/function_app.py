@@ -78,3 +78,16 @@ def update_bollettini(timer: func.TimerRequest) -> None:
     logging.info("Esecuzione update bollettini")
     up_bollettini()  # Esegui la funzione per update bollettini
     logging.info("update bollettini completato")
+
+@app.timer_trigger(
+# esecuzione giornaliera update forecast pm10
+# primo test esecuzione schedulata ore 15:20
+    schedule="0 0 3 * * *",
+    arg_name="timer",
+    run_on_startup=False,
+    use_monitor=True
+)
+def update_forecast(timer: func.TimerRequest) -> None:
+    logging.info("Esecuzione update forecast")
+    up_forecast()  # Esegui la funzione per update bollettini
+    logging.info("update forecast completato")
