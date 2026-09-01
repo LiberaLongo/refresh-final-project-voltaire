@@ -73,3 +73,17 @@ giovedì 13 agosto 2026
 ----------------------
 [IMPORTANTE!!!] (Tiziano - promemoria) Come gestire i dati validati a 4 livelli di validazione progressiva? Il punto è: si aggiornano le tabelle di accumulo con i dati che vengono modificati o si mantiene memoria di tutto? Come si applica la ETL nel nostro caso "dinamico"?
 
+martedì 1 settembre 2026
+------------------------
+Incontro clienti dopo il rientro dalle ferie
+
+(tiziano):
+1) MAI PIù ARRIVARE IN RITARDO!!!
+2) riportare l'affidabilità delle misure, p.e. % mancanza di misure orarie, ecc...
+   si aspettano una proposta per il prossimo incontro di giovedì!!!
+3) storia narrata per grafici (proposta di Marco) p.e. Vicenza ha 2 centraline, oltre alle misure (media ecc...) di Vicenza riportare un grafico descrittivo della "bontà" delle centraline
+4) TASSATIVO!!! portare:
+    a) scheletro della presentazione
+    b) demo PowerBI a che punto siamo
+
+    
