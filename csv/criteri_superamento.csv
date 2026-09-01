@@ -1,18 +1,18 @@
 anno, inquinante_parametro, periodo_mediazione, valore_limite, um, numero_superamenti, criteri_ulteriori
-2026, PM2.5, "anno civile",  25, ug/m3, , ""
+2026, PM2.5, "anno civile",  25, ug/m3, , 
 2026, PM10,    "1 giorno",  50, ug/m3, 35, "da non superare piu` di 35 volte per anno civile"
-2026, PM10, "anno civile",  40, ug/m3, , ""
+2026, PM10, "anno civile",  40, ug/m3, , 
 2026, NO2 (Biossido di azoto),       "1 ora", 200, ug/m3, 18, "da non superare piu` di 18 volte per anno civile"
-2026, NO2 (Biossido di azoto), "anno civile",  40, ug/m3, , ""
-2026, CO (Monossido di carbonio), "media massima giornaliera su 8 ore", 10, mg/m3, ""
+2026, NO2 (Biossido di azoto), "anno civile",  40, ug/m3, , 
+2026, CO (Monossido di carbonio), "media massima giornaliera su 8 ore", 10, mg/m3, 
 2026, O3 (Ozono), "media massima giornaliera calcolata su 8 ore", 120, um/m3, , "da non superare più di 18 volte per anno civile come media su tre anni"
 2030, PM2.5,    "1 giorno",  25, ug/m3, 18, "da non superare piu` di 18 volte per anno civile"
-2030, PM2.5, "anno civile",  10, ug/m3, , ""
+2030, PM2.5, "anno civile",  10, ug/m3, , 
 2030, PM10,    "1 giorno",  45, ug/m3, 18, "da non superare piu` di 18 volte per anno civile"
-2030, PM10, "anno civile",  20, ug/m3, , ""
+2030, PM10, "anno civile",  20, ug/m3, , 
 2030, NO2 (Biossido di azoto),       "1 ora", 200, ug/m3, 3,  "da non superare piu` di  3 volte per anno civile"
 2030, NO2 (Biossido di azoto),    "1 giorno",  50, ug/m3, 18, "da non superare piu` di 18 volte per anno civile"
-2030, NO2 (Biossido di azoto), "anno civile",  20, ug/m3, , ""
-2030, CO (Monossido di carbonio), "media massima giornaliera su 8 ore", 10, mg/m3, ""
+2030, NO2 (Biossido di azoto), "anno civile",  20, ug/m3, , 
+2030, CO (Monossido di carbonio), "media massima giornaliera su 8 ore", 10, mg/m3, 
 2030, CO (Monossido di carbonio),    "1 giorno",   4, mg/m3, 18, "da non superare piu` di 18 volte per anno civile"
 2050, O3 (Ozono), "media massima giornaliera calcolata su 8 ore", 100, um/m3, , "Da non eccedere per più di tre gioni per anno civile (99o percentile)"
