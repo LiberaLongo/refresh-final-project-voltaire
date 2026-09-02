@@ -113,6 +113,23 @@ def up_bollettini():
 
 	logging.info("update_bollettini: aggiornata la tabella cumulativa bollettini. Completato, OK!")
 
+	try:
+		with engine.begin() as conn:
+			conn.execute(
+				text("""
+					drop view if exists gold.bollettini;
+					create view gold.bollettini as ( 
+						select station_id, variable_id, reftime, value, v_flag
+						from silver.bollettini
+					);
+			""")
+		)
+	except Exception as e:
+		logging.exception(f"update_bollettini: Errore durante la creazione della view gold.bollettini: {e}")
+		raise
+
+	logging.info("update_bollettini: aggiornata la view gold.bollettini. Completato, OK!")
+
 	return
 
 def up_forecast():

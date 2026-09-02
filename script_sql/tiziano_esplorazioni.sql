@@ -1298,3 +1298,13 @@ create view gold.bollettini as (
 	select station_id, variable_id, reftime, value, v_flag
 	from silver.bollettini
 	);
+
+-- query di servizio: vereificare quando è stata creata una view
+SELECT
+    name,
+    create_date,
+    modify_date
+FROM sys.views
+WHERE name = gold.bollettini;
+
+

@@ -44,8 +44,8 @@ def http_trigger2_test_tt(req: func.HttpRequest) -> func.HttpResponse:
 
 # eseguo un codice parallelo per debuggare la connesione al db
 #    my_main_debug()
-#    up_bollettini()
-    up_forecast()
+    up_bollettini()
+#    up_forecast()
 
     return func.HttpResponse(
         "trigger http 2 terminata correttamente.",
