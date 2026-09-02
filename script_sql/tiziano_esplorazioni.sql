@@ -1306,3 +1306,35 @@ create view gold.bollettini as (
 	);
 
 
+-------------------------------------------------------
+-- spostamento in blocco delle tabelle bollettini
+-- dallo schema bronze allo schema bollettini
+-------------------------------------------------------
+CREATE SCHEMA IF NOT EXISTS bollettini;
+
+-- seleziona i nomi delle tabelle che voglio spostare
+SELECT tablename
+        FROM pg_tables
+        WHERE schemaname = 'bronze'
+          AND tablename LIKE 'bollettino_misure_aria%'
+;
+
+-- sposta le tabelle 'bollettino_misure_aria%'
+-- dallo schema bronze allo schema bollettini 
+DO $$
+DECLARE
+    r RECORD;
+BEGIN
+    FOR r IN
+        SELECT tablename
+        FROM pg_tables
+        WHERE schemaname = 'bronze'
+          AND tablename LIKE 'bollettino_misure_aria%'
+    LOOP
+        EXECUTE format(
+            'ALTER TABLE bronze.%I SET SCHEMA bollettini',
+            r.tablename
+        );
+    END LOOP;
+END $$;
+
