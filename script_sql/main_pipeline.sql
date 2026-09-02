@@ -375,3 +375,30 @@ create view gold.medie_triennali_provincie_co as (
 
 -- fine creazione viste medie triennali ultimi tre anni
 -------------------------------------------------------
+
+
+-- costruzione della tabella silver per il ranking europeo delle città
+drop table if exists silver.city_ranking CASCADE;
+create table silver.city_ranking as (
+	SELECT "Country" as country, 
+		"City name" as city_name, 
+		"Population in the city" as population, 
+		"City Centroids Latitude" as lat, 
+		"City Centroids Longitude" as long,
+		"Rank" as rank, 
+		"Fine particulate matter (ug/m3)" as pm25, 
+		"Rank (PM2.5)" as rank_pm25,
+		"Ozone (ug/m3)" as o3, 
+		"Rank (O3)" as rank_o3, 
+		"Nitrogen dioxide (ug/m3)" as no2, 
+		"Rank (NO2)" as rank_no2
+	FROM bronze.cityranking_eu
+);
+
+-- costruzione della vista gold.city_ranking per il ranking europeo delle città
+drop view if exists gold.city_ranking;
+create table gold.city_ranking as (
+	SELECT country, city_name, population, 
+		   lat, long, rank, pm25, rank_pm25, o3, rank_o3, no2, rank_no2
+	FROM silver.city_ranking
+);
