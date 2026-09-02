@@ -5,7 +5,7 @@ inizio_validita,fine_validita,inquinante_parametro,periodo_mediazione,valore_lim
 0001-01-01,2026-12-11,NO2 (Biossido di azoto),"1 ora",200,ug/m3,18,"da non superare piu` di 18 volte per anno civile"
 0001-01-01,2026-12-11,NO2 (Biossido di azoto),"anno civile",40,ug/m3,,
 0001-01-01,2026-12-11,CO (Monossido di carbonio),"media massima giornaliera su 8 ore",10,mg/m3,,
-0001-01-01,2026-12-11,O3 (Ozono),"media massima giornaliera calcolata su 8 ore",120,um/m3,,"da non superare più di 18 volte per anno civile come media su tre anni"
+0001-01-01,2026-12-11,O3 (Ozono),"media massima giornaliera calcolata su 8 ore",120,um/m3,18,"da non superare più di 18 volte per anno civile come media su tre anni"
 2026-12-12,2030-01-01,PM2.5,"1 giorno",25,ug/m3,18,"da non superare piu` di 18 volte per anno civile"
 2026-12-12,2030-01-01,PM2.5,"anno civile",10,ug/m3,,
 2026-12-12,2030-01-01,PM10,"1 giorno",45,ug/m3,18,"da non superare piu` di 18 volte per anno civile"

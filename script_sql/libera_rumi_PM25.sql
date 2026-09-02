@@ -52,8 +52,8 @@ create view gold.pm25_season as (
 -- Quali comuni rischiano le sanzioni europee?
 
 -- anno civile
-drop view if exists gold.pm25_superamenti;
-create view gold.pm25_superamenti as
+drop view if exists gold.pm25_superamenti_anno_civile;
+create view gold.pm25_superamenti_anno_civile as
 select year, cod_staz, media_pm25
 from (
 	select
@@ -78,3 +78,25 @@ where media_pm25 >= (
 -- select * from gold.pm25_superamenti;
 -- select * from bronze.criteri_superamento;
 
+-- 1 giorno
+--drop view if exists gold.pm25_superamenti_1giorno;
+--create view gold.pm25_superamenti_1giorno as
+--select extract(year from data) as year, cod_staz, count(*)
+--from (
+--	select cod_staz, data, valore
+--	from silver.pm25
+--	where valore >= (
+--		select valore_limite
+--		from bronze.criteri_superamento
+--		where
+--			inquinante_parametro = 'PM2.5'
+--			and periodo_mediazione = '1 giorno'
+--			and now()
+--				between inizio_validita::date
+--					and fine_validita::date
+--	)
+--)
+--group by year, cod_staz;
+
+
+:
