@@ -1295,7 +1295,9 @@ order by perc_misure DESC;
 ------------------------------------------------------
 drop view if exists gold.bollettini;
 create view gold.bollettini as ( 
-	select station_id, variable_id, reftime, value, v_flag
+	select station_id, variable_id, 
+	       reftime::date, 
+	       value, v_flag
 	from silver.bollettini
 	);
 
