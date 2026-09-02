@@ -1289,3 +1289,12 @@ where p.data_inizio  >= '2020-01-01'::date and p.data_inizio  <= '2025-12-31'::d
 group by p.cod_staz 
 order by perc_misure DESC;
 
+
+------------------------------------------------------
+-- query di servizio creazione view bollettini su gold
+------------------------------------------------------
+drop view if exists gold.bollettini;
+create view gold.bollettini as ( 
+	select station_id, variable_id, reftime, value, v_flag
+	from silver.bollettini
+	);
