@@ -42,7 +42,7 @@ def http_trigger(req: func.HttpRequest) -> func.HttpResponse:
 def http_trigger2_test_tt(req: func.HttpRequest) -> func.HttpResponse:
     logging.info('trigger http 2 di test')
 
-# eseguo un codice parallelo per debuggare la connesione al db
+# eseguo un codice parallelo per debuggare la connessione al db
 #    my_main_debug()
     up_bollettini()
 #    up_forecast()
