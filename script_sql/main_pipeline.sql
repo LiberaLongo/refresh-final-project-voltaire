@@ -306,3 +306,72 @@ create view gold.co_medie_mensili_provincie as (
 			p.um
 );
 
+-- creazione medie triennali provincie per determinare la provincie
+-- più inquinate, si considerano gli ultimi tre anni 2023-2024-2025
+drop view if exists gold.medie_triennali_provincie_pm10;
+create view gold.medie_triennali_provincie_pm10 as (
+	select ds.provincia, 
+		dp.parametro, avg(p.valore) as media_triennale, p.um 
+	from silver.pm10 p 
+	join silver.dim_stazioni ds on p.cod_staz = ds.cod_staz 
+	join silver.dim_parametri dp on dp.id_parametro = p.id_param 
+	where dp.parametro = 'PM10' and 
+		EXTRACT(YEAR FROM (p.data)) >= 2023  
+		and EXTRACT(YEAR FROM (p.data)) <= 2025
+	group by provincia, parametro, p.um
+	order by avg(p.valore) DESC);
+
+drop view if exists gold.medie_triennali_provincie_pm25;
+create view gold.medie_triennali_provincie_pm25 as (
+	select ds.provincia, 
+		dp.parametro, avg(p.valore) as media_triennale, p.um 
+	from silver.pm25 p 
+	join silver.dim_stazioni ds on p.cod_staz = ds.cod_staz 
+	join silver.dim_parametri dp on dp.id_parametro = p.id_param 
+	where dp.id_parametro  = 111 and 
+		EXTRACT(YEAR FROM (p.data)) >= 2023  
+		and EXTRACT(YEAR FROM (p.data)) <= 2025
+	group by provincia, parametro, p.um
+	order by avg(p.valore) DESC);
+
+drop view if exists gold.medie_triennali_provincie_no2;
+create view gold.medie_triennali_provincie_no2 as (
+	select ds.provincia, 
+		dp.parametro, avg(p.valore) as media_triennale, p.um 
+	from silver.no2 p 
+	join silver.dim_stazioni ds on p.cod_staz = ds.cod_staz 
+	join silver.dim_parametri dp on dp.id_parametro = p.id_param 
+	where dp.id_parametro  = 8 and 
+		EXTRACT(YEAR FROM (p.data_inizio)) >= 2023  
+		and EXTRACT(YEAR FROM (p.data_inizio)) <= 2025
+	group by provincia, parametro, p.um
+	order by avg(p.valore) DESC);
+
+drop view if exists gold.medie_triennali_provincie_o3;
+create view gold.medie_triennali_provincie_o3 as (
+	select ds.provincia, 
+		dp.parametro, avg(p.valore) as media_triennale, p.um 
+	from silver.o3 p 
+	join silver.dim_stazioni ds on p.cod_staz = ds.cod_staz 
+	join silver.dim_parametri dp on dp.id_parametro = p.id_param 
+	where dp.id_parametro  = 7 and 
+		EXTRACT(YEAR FROM (p.data_inizio)) >= 2023  
+		and EXTRACT(YEAR FROM (p.data_inizio)) <= 2025
+	group by provincia, parametro, p.um
+	order by avg(p.valore) DESC);
+
+drop view if exists gold.medie_triennali_provincie_co;
+create view gold.medie_triennali_provincie_co as (
+	select ds.provincia, 
+		dp.parametro, avg(p.valore) as media_triennale, p.um 
+	from silver.co p 
+	join silver.dim_stazioni ds on p.cod_staz = ds.cod_staz 
+	join silver.dim_parametri dp on dp.id_parametro = p.id_param 
+	where dp.id_parametro  = 10 and 
+		EXTRACT(YEAR FROM (p.data_inizio)) >= 2023  
+		and EXTRACT(YEAR FROM (p.data_inizio)) <= 2025
+	group by provincia, parametro, p.um
+	order by avg(p.valore) DESC);
+
+-- fine creazione viste medie triennali ultimi tre anni
+-------------------------------------------------------
