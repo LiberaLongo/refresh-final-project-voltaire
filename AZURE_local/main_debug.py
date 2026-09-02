@@ -119,9 +119,15 @@ def up_bollettini():
 				text("""
 					drop view if exists gold.bollettini;
 					create view gold.bollettini as ( 
-						select station_id, variable_id, reftime, value, v_flag
-						from silver.bollettini
-					);
+						select station_id, ds.stazione, ds.comune, ds.indirizzo, ds.provincia,
+							variable_id, dp.parametro, dp.um,
+							reftime::date as giorno,
+							right(reftime, 5)::time as ora,
+							value, v_flag
+						from silver.bollettini b
+						join silver.dim_stazioni ds on ds.cod_staz = b.station_id 
+						join silver.dim_parametri dp on dp.id_parametro = b.variable_id
+						);
 			""")
 		)
 	except Exception as e:
