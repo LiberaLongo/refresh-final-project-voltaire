@@ -127,6 +127,7 @@ def up_bollettini():
 						from silver.bollettini b
 						join silver.dim_stazioni ds on ds.cod_staz = b.station_id 
 						join silver.dim_parametri dp on dp.id_parametro = b.variable_id
+						where variable_id in (5, 111, 7, 8, 10)
 						);
 			""")
 		)
