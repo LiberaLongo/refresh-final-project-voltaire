@@ -397,7 +397,7 @@ create table silver.city_ranking as (
 
 -- costruzione della vista gold.city_ranking per il ranking europeo delle città
 drop view if exists gold.city_ranking;
-create table gold.city_ranking as (
+create view gold.city_ranking as (
 	SELECT country, city_name, population, 
 		   lat, long, rank, pm25, rank_pm25, o3, rank_o3, no2, rank_no2
 	FROM silver.city_ranking
