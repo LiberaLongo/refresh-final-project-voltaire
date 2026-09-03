@@ -1442,12 +1442,21 @@ GROUP BY
 -- creo view forecast_comuni_pm10
 drop view if exists gold.forecast_comuni_pm10;
 create view gold.forecast_comuni_pm10 as ( 
+with forecast as (
+	select time as ora,
+    	   latitude as lat, longitude as lon, 
+       	   p.lat_index, p.lon_index,
+       	   pm10_conc as pm10
+	from gold.forecast_pm10 fp 
+	left join lateral silver.punto_griglia(fp.latitude::numeric, fp.longitude::numeric) p
+	ON TRUE
+	)
 SELECT
     cg.comune, cg.sigla_provincia,
-    ARRAY_AGG(f.pm10_conc ORDER BY f.time) AS previsioni
+    ARRAY_AGG(f.pm10 ORDER BY f.ora) AS previsioni
 FROM silver.comuni_geogrid cg
-JOIN gold.forecast_pm10 f
-    ON cg.lat_grid = f.latitude AND cg.lon_grid = f.longitude
+JOIN forecast f
+    ON cg.lat_index = f.lat_index AND cg.lon_index = f.lon_index 
 GROUP BY
     cg.comune, cg.sigla_provincia
 );
