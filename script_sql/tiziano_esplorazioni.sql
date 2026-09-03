@@ -1349,3 +1349,141 @@ BEGIN
     END LOOP;
 END $$;
 
+
+
+------------------------------------------------------
+-- esplorazioni sul reticolo geografico per forecast
+------------------------------------------------------
+select min(fp.latitude) as min_lat,
+       max(fp.latitude) as max_lat,
+       min(fp.longitude) as min_lon,
+       max(fp.longitude) as max_lon
+from gold.forecast_pm10 fp ;
+
+
+select count (distinct fp.latitude)
+from gold.forecast_pm10 fp ;
+select distinct fp.latitude
+from gold.forecast_pm10 fp
+order by fp.latitude ;
+
+
+select count (distinct fp.longitude)
+from gold.forecast_pm10 fp ;
+
+
+-- creazione della funzione SQL di calcolo del punto griglia approssimato
+-- date le coordinate geografiche del punto qualunque interno alla griglia
+-- l'intenso uso di ::NUMERIC è per evitare errori di arrotondamento
+CREATE OR REPLACE FUNCTION silver.punto_griglia(
+    p_lat NUMERIC,
+    p_lon NUMERIC
+)
+RETURNS TABLE (
+    lat_grid NUMERIC,
+    lon_grid NUMERIC,
+    lat_index INTEGER,
+    lon_index INTEGER
+)
+LANGUAGE SQL
+IMMUTABLE
+AS $$
+    WITH indici AS (
+        SELECT
+            ROUND((p_lat - 43.75::NUMERIC) / 0.1::NUMERIC)::INTEGER AS i,
+            ROUND((p_lon - 9.05::NUMERIC)  / 0.1::NUMERIC)::INTEGER AS j
+    )
+    SELECT
+        43.75::NUMERIC + i * 0.1::NUMERIC,
+        9.05::NUMERIC  + j * 0.1::NUMERIC,
+        i,
+        j
+    FROM indici
+    WHERE i BETWEEN 0 AND 14
+      AND j BETWEEN 0 AND 39;
+$$;
+
+select silver.punto_griglia(43.7319283, 11.43);
+
+-- la colonna 0 e la 1 indicano latitudine e longitudine di griglia
+-- con valori sperabilmente esatti anche nella parte decimale
+select lat_grid, lon_grid
+from silver.punto_griglia(43.7319283, 11.43) as pg
+;
+
+-- in questo modo posso assegnare coordinate di griglia ai centroidi dei comuni
+-- da bronze.comuni_geo posso costruire silver.comuni_geo_griglia
+select istat, comune, sigla_provincia, lat, lng,
+       p.lat_grid, p.lon_grid
+from bronze.comuni_geo as cg
+left join lateral silver.punto_griglia(cg.lat::numeric, cg.lng::numeric) p
+ON TRUE;
+
+-- creo la tabella
+drop table if exists silver.comuni_geogrid CASCADE;
+create table silver.comuni_geogrid as ( 
+	select istat, comune, sigla_provincia, lat, lng,
+           p.lat_grid, p.lon_grid, p.lat_index, p.lon_index
+	from bronze.comuni_geo as cg
+	left join lateral silver.punto_griglia(cg.lat::numeric, cg.lng::numeric) p
+	ON TRUE
+	);	
+
+-- lanciamoci nel joinare le previsioni per comune
+SELECT
+    cg.comune, 
+    ARRAY_AGG(f.pm10_conc ORDER BY f.time) AS previsioni
+FROM silver.comuni_geogrid cg
+FULL JOIN gold.forecast_pm10 f
+    ON cg.lat_grid = f.latitude AND cg.lon_grid = f.longitude
+GROUP BY
+    cg.comune;
+
+-- creo view forecast_comuni_pm10
+drop view if exists gold.forecast_comuni_pm10;
+create view gold.forecast_comuni_pm10 as ( 
+SELECT
+    cg.comune, cg.sigla_provincia,
+    ARRAY_AGG(f.pm10_conc ORDER BY f.time) AS previsioni
+FROM silver.comuni_geogrid cg
+JOIN gold.forecast_pm10 f
+    ON cg.lat_grid = f.latitude AND cg.lon_grid = f.longitude
+GROUP BY
+    cg.comune, cg.sigla_provincia
+);
+
+
+-- devo creare una tabella da forecast che abbia gli indici discreti del reticolo per joinare in modo esatto
+select time as ora,
+       latitude as lat, longitude as lon, 
+       p.lat_index, p.lon_index,
+       pm10_conc as pm10
+from gold.forecast_pm10 fp 
+left join lateral silver.punto_griglia(fp.latitude::numeric, fp.longitude::numeric) p
+ON TRUE
+;
+
+-- joino la forecast temporanea con gli indici interi alla tabella comuni_geogrid
+with forecast as (
+	select time as ora,
+    	   latitude as lat, longitude as lon, 
+       	   p.lat_index, p.lon_index,
+       	   pm10_conc as pm10
+	from gold.forecast_pm10 fp 
+	left join lateral silver.punto_griglia(fp.latitude::numeric, fp.longitude::numeric) p
+	ON TRUE
+	)
+SELECT
+    cg.comune, cg.sigla_provincia,
+    ARRAY_AGG(f.pm10 ORDER BY f.ora) AS previsioni
+FROM silver.comuni_geogrid cg
+JOIN forecast f
+    ON cg.lat_index = f.lat_index AND cg.lon_index = f.lon_index 
+GROUP BY
+    cg.comune, cg.sigla_provincia
+;
+
+	
+	
+
+
