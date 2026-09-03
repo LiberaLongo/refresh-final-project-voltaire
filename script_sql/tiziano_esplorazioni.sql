@@ -1453,12 +1453,13 @@ with forecast as (
 	)
 SELECT
     cg.comune, cg.sigla_provincia,
-    ARRAY_AGG(f.pm10 ORDER BY f.ora) AS previsioni
+    f.ora, f.pm10
+--    ARRAY_AGG(f.pm10 ORDER BY f.ora) AS previsioni
 FROM silver.comuni_geogrid cg
 JOIN forecast f
     ON cg.lat_index = f.lat_index AND cg.lon_index = f.lon_index 
-GROUP BY
-    cg.comune, cg.sigla_provincia
+--GROUP BY
+--    cg.comune, cg.sigla_provincia
 );
 
 
