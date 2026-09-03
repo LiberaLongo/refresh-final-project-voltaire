@@ -8,9 +8,9 @@ create table silver.pm25_00_distinct as (
 );
 
 -- quante righe erano duplicate e ho rimosso?
---select count(*) from bronze.pm25
+--select count(*), 'bronze' as t from bronze.pm25
 --union all
---select count(*) from silver.pm25_00_distinct;
+--select count(*), 'silver' as t from silver.pm25_00_distinct;
 -- nessuna
 
 -- ETL modifica colonne data e ora 
@@ -31,16 +31,27 @@ create table silver.pm25 as (
 drop view if exists gold.pm25_season;
 create view gold.pm25_season as (
 	select *,
-	    case
-	        when extract(month from data) in (12, 1, 2)
-	        	then concat(extract(year from data), '_Inverno')
-	        when extract(month from data) in (3, 4, 5)
-	        	then concat(extract(year from data), '_Primavera')
-	        when extract(month from data) in (6, 7, 8)
-	        	then concat(extract(year from data), '_Estate')
-	        when extract(month from data) in (9, 10, 11)
-	        	then concat(extract(year from data), '_Autunno')
-	    end as season
+		extract(year from data) as year,
+		case
+			when extract(month from data) in (12, 1, 2)
+				then 1
+			when extract(month from data) in (3, 4, 5)
+				then 2
+			when extract(month from data) in (6, 7, 8)
+				then 3
+			when extract(month from data) in (9, 10, 11)
+				then 4
+		end as season_numero,
+		case
+			when extract(month from data) in (12, 1, 2)
+				then 'Inverno'
+			when extract(month from data) in (3, 4, 5)
+				then 'Primavera'
+			when extract(month from data) in (6, 7, 8)
+				then 'Estate'
+			when extract(month from data) in (9, 10, 11)
+				then 'Autunno'
+		end as name_season
 	from silver.pm25
 );
 
@@ -126,3 +137,5 @@ from (
 ) as a
 join silver.dim_stazioni as dim
 	on a.cod_staz = dim.cod_staz
+	
+select * from gold.pm25_affidabilita_misure;
