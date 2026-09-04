@@ -2,6 +2,7 @@
 
 import logging
 import os
+from time import timezone
 from sqlalchemy import create_engine, text
 import pandas as pd
 from pathlib import Path
@@ -147,6 +148,9 @@ def up_forecast():
 
 	import cdsapi
 	from pathlib import Path
+	from datetime import datetime, timezone
+
+	today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
 	# definisce il file per accesso a Copernicus
 	cdsapirc = Path.home() / ".cdsapirc"
@@ -168,10 +172,9 @@ def up_forecast():
 			"model": ["ensemble"],
 			"level": ["0"],
 			"type": ["forecast"],
-			"date": ["2026-08-30"],
+			"date": [today],
 			"time": ["00:00"],
 			"leadtime_hour": [str(i) for i in range(96)], 
-			# si vogliono i valori orari previsti per le ore a venire fino a 96 ore 4 giorni
 			"data_format": "netcdf_zip",
 			"area": [45.2, 9, 43.7, 13]
 		}
@@ -243,8 +246,9 @@ def up_forecast():
 		conn.execute(text(""" 
 			create view gold.forecast_comuni_pm10 as ( 
 				with forecast as (
-					select time as ora,
-    	   			latitude as lat, longitude as lon, 
+					select 
+					current_date::timestamp + time * INTERVAL '1 hour' as ora,
+					latitude as lat, longitude as lon, 
        	   			p.lat_index, p.lon_index,
        	   			pm10_conc as pm10
 					from gold.forecast_pm10 fp 
