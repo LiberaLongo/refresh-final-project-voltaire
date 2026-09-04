@@ -220,6 +220,12 @@ def up_forecast():
 
 	engine = create_engine(DATABASE_URL)
 
+#   cancellazione vecchia view forecast_comunipm10
+	logging.info("inizio cancellazione vecchia view forecast_comuni_pm10")
+	with engine.begin() as conn:
+		conn.execute(text("DROP VIEW if exists gold.forecast_comuni_pm10;"))
+	logging.info("cancellata la vecchia view forecast_comuni_pm10")
+
 #   caricamento della tabella su postgres
 	logging.info("caricamento tabella su postgres...")
 	df.to_sql(
@@ -230,5 +236,26 @@ def up_forecast():
 		index=False
 	)
 	logging.info("caricamento tabella su postgres terminata. OK")
+
+# creazione della view forecast_comuni_pm10
+	logging.info("inizio creazione view forecast_comuni_pm10")
+	with engine.begin() as conn:
+		conn.execute(text(""" 
+			create view gold.forecast_comuni_pm10 as ( 
+				with forecast as (
+					select time as ora,
+    	   			latitude as lat, longitude as lon, 
+       	   			p.lat_index, p.lon_index,
+       	   			pm10_conc as pm10
+					from gold.forecast_pm10 fp 
+					left join lateral silver.punto_griglia(fp.latitude::numeric, fp.longitude::numeric) p
+					ON TRUE
+					)
+				SELECT cg.comune, cg.sigla_provincia, f.ora, f.pm10
+				FROM silver.comuni_geogrid cg
+				JOIN forecast f
+    			ON cg.lat_index = f.lat_index AND cg.lon_index = f.lon_index 
+				);
+			"""))
 
 	return
