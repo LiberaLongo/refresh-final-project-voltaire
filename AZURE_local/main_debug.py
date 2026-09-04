@@ -170,7 +170,7 @@ def up_forecast():
 			"type": ["forecast"],
 			"date": ["2026-08-30"],
 			"time": ["00:00"],
-			"leadtime_hour": [str(i) for i in range(48)], 
+			"leadtime_hour": [str(i) for i in range(96)], 
 			# si vogliono i valori orari previsti per le ore a venire fino a 96 ore 4 giorni
 			"data_format": "netcdf_zip",
 			"area": [45.2, 9, 43.7, 13]
