@@ -25,8 +25,7 @@
 -- pm10
 drop view if exists gold.pm10_season;
 create view gold.pm10_season as (
-	select *,
-		extract(year from data) as year,
+	select cod_staz, data, valore,
 		case
 			when extract(month from data) in (12, 1, 2)
 				then '1 - Inverno'
@@ -45,8 +44,7 @@ select * from gold.pm10_season;
 -- pm25
 drop view if exists gold.pm25_season;
 create view gold.pm25_season as (
-	select *,
-		extract(year from data) as year,
+	select cod_staz, data, valore,
 		case
 			when extract(month from data) in (12, 1, 2)
 				then '1 - Inverno'
@@ -65,8 +63,7 @@ select * from gold.pm25_season;
 -- co
 drop view if exists gold.co_season;
 create view gold.co_season as (
-	select *,
-		extract(year from data_inizio) as year,
+	select cod_staz, data_inizio, ora_inizio, valore,
 		case
 			when extract(month from data_inizio) in (12, 1, 2)
 				then '1 - Inverno'
@@ -85,8 +82,7 @@ select * from gold.co_season;
 -- no2
 drop view if exists gold.no2_season;
 create view gold.no2_season as (
-	select *,
-		extract(year from data_inizio) as year,
+	select cod_staz, data_inizio, ora_inizio, valore,
 		case
 			when extract(month from data_inizio) in (12, 1, 2)
 				then '1 - Inverno'
@@ -105,8 +101,7 @@ select * from gold.no2_season;
 -- o3
 drop view if exists gold.o3_season;
 create view gold.o3_season as (
-	select *,
-		extract(year from data_inizio) as year,
+	select cod_staz, data_inizio, ora_inizio, valore,
 		case
 			when extract(month from data_inizio) in (12, 1, 2)
 				then '1 - Inverno'
