@@ -3,6 +3,7 @@ import azure.functions as func
 from main import my_main
 
 # aggiunta TT
+# seplice prova di modifica codice attraverso il tablet
 from main_debug import my_main_debug, up_bollettini, up_forecast
 
 app = func.FunctionApp()
