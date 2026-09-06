@@ -44,10 +44,12 @@ def http_trigger2_test_tt(req: func.HttpRequest) -> func.HttpResponse:
     logging.info('trigger http 2 di test')
 
 # eseguo un codice parallelo per debuggare la connessione al db
-#    my_main_debug()
-#   up_bollettini()
-    up_forecast()
-
+    azione = req.params.get("azione")
+    if azione == "up_bollettini": up_bollettini()
+    elif azione == "up_forecast": up_forecast()
+    elif azione == "my_main_debug": my_main_debug()
+    else: logging.info("nessuna azione eseguita")
+    
     return func.HttpResponse(
         "trigger http 2 terminata correttamente.",
         status_code=200
