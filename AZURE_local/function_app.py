@@ -84,8 +84,9 @@ def update_bollettini(timer: func.TimerRequest) -> None:
 
 @app.timer_trigger(
 # esecuzione giornaliera update forecast pm10
-# primo test esecuzione schedulata ore 15:20
-    schedule="0 0 3 * * *",
+# set di debug ogni ora alle xx:30
+# probabilmente i dati di forecast vengono resi disponibili tra le 8 e le 10 UTC
+    schedule="0 30 7 * * *",
     arg_name="timer",
     run_on_startup=False,
     use_monitor=True
