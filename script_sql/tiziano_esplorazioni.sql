@@ -1439,11 +1439,11 @@ FULL JOIN gold.forecast_pm10 f
 GROUP BY
     cg.comune;
 
--- creo view forecast_comuni_pm10
+-- creo view forecast_comuni_pm10 con timestamp = ora
 drop view if exists gold.forecast_comuni_pm10;
 create view gold.forecast_comuni_pm10 as ( 
 with forecast as (
-	select time as ora,
+	select current_date::timestamp + time * INTERVAL '1 hour' as ora,
     	   latitude as lat, longitude as lon, 
        	   p.lat_index, p.lon_index,
        	   pm10_conc as pm10
@@ -1454,12 +1454,9 @@ with forecast as (
 SELECT
     cg.comune, cg.sigla_provincia,
     f.ora, f.pm10
---    ARRAY_AGG(f.pm10 ORDER BY f.ora) AS previsioni
 FROM silver.comuni_geogrid cg
 JOIN forecast f
     ON cg.lat_index = f.lat_index AND cg.lon_index = f.lon_index 
---GROUP BY
---    cg.comune, cg.sigla_provincia
 );
 
 

@@ -2,6 +2,7 @@
 
 import logging
 import os
+from time import timezone
 from sqlalchemy import create_engine, text
 import pandas as pd
 from pathlib import Path
@@ -147,6 +148,9 @@ def up_forecast():
 
 	import cdsapi
 	from pathlib import Path
+	from datetime import datetime, timezone
+
+	today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
 	# definisce il file per accesso a Copernicus
 	cdsapirc = Path.home() / ".cdsapirc"
@@ -168,10 +172,9 @@ def up_forecast():
 			"model": ["ensemble"],
 			"level": ["0"],
 			"type": ["forecast"],
-			"date": ["2026-08-30"],
+			"date": [today],
 			"time": ["00:00"],
-			"leadtime_hour": [str(i) for i in range(48)], 
-			# si vogliono i valori orari previsti per le ore a venire fino a 96 ore 4 giorni
+			"leadtime_hour": [str(i) for i in range(96)], 
 			"data_format": "netcdf_zip",
 			"area": [45.2, 9, 43.7, 13]
 		}
@@ -220,6 +223,12 @@ def up_forecast():
 
 	engine = create_engine(DATABASE_URL)
 
+#   cancellazione vecchia view forecast_comunipm10
+	logging.info("inizio cancellazione vecchia view forecast_comuni_pm10")
+	with engine.begin() as conn:
+		conn.execute(text("DROP VIEW if exists gold.forecast_comuni_pm10;"))
+	logging.info("cancellata la vecchia view forecast_comuni_pm10")
+
 #   caricamento della tabella su postgres
 	logging.info("caricamento tabella su postgres...")
 	df.to_sql(
@@ -230,5 +239,27 @@ def up_forecast():
 		index=False
 	)
 	logging.info("caricamento tabella su postgres terminata. OK")
+
+# creazione della view forecast_comuni_pm10
+	logging.info("inizio creazione view forecast_comuni_pm10")
+	with engine.begin() as conn:
+		conn.execute(text(""" 
+			create view gold.forecast_comuni_pm10 as ( 
+				with forecast as (
+					select 
+					current_date::timestamp + time * INTERVAL '1 hour' as ora,
+					latitude as lat, longitude as lon, 
+       	   			p.lat_index, p.lon_index,
+       	   			pm10_conc as pm10
+					from gold.forecast_pm10 fp 
+					left join lateral silver.punto_griglia(fp.latitude::numeric, fp.longitude::numeric) p
+					ON TRUE
+					)
+				SELECT cg.comune, cg.sigla_provincia, f.ora, f.pm10
+				FROM silver.comuni_geogrid cg
+				JOIN forecast f
+    			ON cg.lat_index = f.lat_index AND cg.lon_index = f.lon_index 
+				);
+			"""))
 
 	return
