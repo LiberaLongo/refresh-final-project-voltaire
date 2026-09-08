@@ -64,7 +64,7 @@ def my_main_debug():
 			data_ora = datetime.now(ZoneInfo("Europe/Rome")).strftime("%Y-%m-%d_%H-%M-%S")
 			df.to_sql(name=f"bollettino_misure_aria_{data_ora}", con=engine, schema="bollettini", 
 					if_exists="replace", index=False)
-			df.to_sql(name="staging_bollettino", con=engine, schema="silver", 
+			df.to_sql(name="ultimo_bollettino", con=engine, schema="bronze", 
 					if_exists="replace", index=False)
 			up_bollettini()
 			
@@ -72,7 +72,7 @@ def my_main_debug():
 		except requests.exceptions.HTTPError as e:
 			if response.status_code == 502 and tentativo <= 2:
 				logging.warning(f"main_debug: Errore 502 Bad Gateway, tentativo {tentativo + 1} di 3. Riprovo tra {300 ** tentativo} secondi...")
-				time.sleep(300 ** tentativo)
+				time.sleep(30 ** tentativo)
 			else:
 				raise
 
@@ -113,7 +113,7 @@ def up_bollettini():
 					INSERT INTO silver.bollettini (
 						station_id, variable_id, reftime, value, v_flag)
 					SELECT station_id, variable_id, reftime, value, v_flag
-				FROM silver.staging_bollettino
+				FROM bronze.ultimo_bollettino
 				ON CONFLICT (station_id, variable_id, reftime)
 				DO UPDATE SET 
 					value = EXCLUDED.value,

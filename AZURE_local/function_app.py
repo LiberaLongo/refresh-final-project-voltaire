@@ -58,8 +58,8 @@ def http_trigger2_test_tt(req: func.HttpRequest) -> func.HttpResponse:
 # seconda funzione per scarico giornaliero dati misure
 
 @app.timer_trigger(
-#esecuzione giornaliera scarico del bollettino alle 01:00
-    schedule="0 30 8 * * *",
+#esecuzione giornaliera scarico del bollettino ARPAE
+    schedule="0 30 6 * * *",
     arg_name="timer",
     run_on_startup=False,
     use_monitor=True
@@ -69,7 +69,7 @@ def daily_job(timer: func.TimerRequest) -> None:
     my_main_debug()  # Esegui la funzione per il job giornaliero
     logging.info("Job giornaliero completato")
 
-@app.timer_trigger(
+'''@app.timer_trigger(
 # esecuzione giornaliera update tabella bollettini
 # eseguita dopo lo scarico del bollettino
     schedule="0 20 1 * * *",
@@ -82,11 +82,13 @@ def update_bollettini(timer: func.TimerRequest) -> None:
 #    up_bollettini()  # Esegui la funzione per update bollettini
     logging.info("update bollettini completato")
 
+'''
+
 @app.timer_trigger(
 # esecuzione giornaliera update forecast pm10
 # set di debug ogni ora alle xx:30
 # probabilmente i dati di forecast vengono resi disponibili tra le 8 e le 10 UTC
-    schedule="0 30 7,8,9 * * *",
+    schedule="0 30 8 * * *",
     arg_name="timer",
     run_on_startup=False,
     use_monitor=True
