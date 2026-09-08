@@ -1505,6 +1505,61 @@ select *, 'nuova' as tab
 from bollettini."bollettino_misure_aria_2026-09-08_05-35-31" bma 
 where bma.station_id = 5000007 and bma.reftime = '08/10/2026 00:00'
 
-	
 
+-- creazione fatto_misure
+DROP TABLE if exists silver.fatto_misure_00;
+CREATE TABLE silver.fatto_misure_00 as (
+SELECT cod_staz, id_param, "data" as giorno, ora, valore
+FROM silver.pm10
+UNION ALL
+SELECT cod_staz, id_param, "data" as giorno, ora, valore
+FROM silver.pm25
+UNION ALL 
+SELECT cod_staz, id_param, data_inizio as giorno, ora_inizio as ora, valore
+FROM silver.co
+UNION ALL
+SELECT cod_staz, id_param, data_inizio as giorno, ora_inizio as ora, valore
+FROM silver.no2
+UNION ALL
+SELECT cod_staz, id_param, data_inizio as giorno, ora_inizio as ora, valore
+FROM silver.o3
+);
+
+-- usiamo la definizione "meteorologica" di stagioni ovvero:
+--  ❄️ inverno meteorologico = dicembre, gennaio, febbraio
+--  🌱 primavera meteorologica = marzo, aprile, maggio
+--  ☀️ estate meteorologica = giugno, luglio, agosto
+--  🍂 autunno meteorologico = settembre, ottobre, novembre
+
+drop table if exists silver.fatto_misure CASCADE;
+create table silver.fatto_misure as (
+select cod_staz, id_param, giorno, ora, valore,
+		case
+			when extract(month from giorno) in (12, 1, 2)
+				then 1
+			when extract(month from giorno) in (3, 4, 5)
+				then 2
+			when extract(month from giorno) in (6, 7, 8)
+				then 3
+			when extract(month from giorno) in (9, 10, 11)
+				then 4
+		end as id_season
+from silver.fatto_misure_00
+);
+
+drop table if exists silver.dim_season;
+create table silver.dim_season as (
+	select 1 as id_season, 'Inverno' as name
+	union all
+	select 2 as id_season, 'Primavera' as name
+	union all
+	select 3 as id_season, 'Estate' as name
+	union all
+	select 4 as id_season, 'Autunno' as name
+)
+
+drop view if exists gold.fatto_misure;
+create view gold.fatto_misure as (
+	select * from silver.fatto_misure fm 
+);
 
