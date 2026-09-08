@@ -11,7 +11,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 import time
 
-def my_main_debug():
+def bollettino_arpae():
 	# legge le variabili di ambiente per la connessione al db
 	HOST = os.getenv("DB_HOST")
 	PORT = os.getenv("DB_PORT")
@@ -153,7 +153,7 @@ def up_bollettini():
 
 	return
 
-def up_forecast():
+def forecast():
 	# Copernico - CAMS - pipeline forecast pm10
 	# download dei dati CAMS (Copernicus Atmosphere Monitoring Service) 
 	# dati ristretti all'area geografica compresa 
@@ -247,7 +247,7 @@ def up_forecast():
 	df.to_sql(
 		"forecast_pm10",
 		engine,
-		schema= "gold",
+		schema= "silver",
 		if_exists="replace",
 		index=False
 	)
@@ -264,7 +264,7 @@ def up_forecast():
 					latitude as lat, longitude as lon, 
        	   			p.lat_index, p.lon_index,
        	   			pm10_conc as pm10
-					from gold.forecast_pm10 fp 
+					from silver.forecast_pm10 fp 
 					left join lateral silver.punto_griglia(fp.latitude::numeric, fp.longitude::numeric) p
 					ON TRUE
 					)

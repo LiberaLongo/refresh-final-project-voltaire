@@ -4,10 +4,11 @@ from main import my_main
 
 # aggiunta TT
 # seplice prova di modifica codice attraverso il tablet
-from main_debug import my_main_debug, up_bollettini, up_forecast
+from main_debug import bollettino_arpae, up_bollettini, forecast
 
 app = func.FunctionApp()
 
+'''
 # funzione lanciata "ogni giorno"
 # (disattivata in locale)
 @app.timer_trigger(schedule="0 0 0 * * *", arg_name="myTimer", run_on_startup=False,
@@ -37,17 +38,18 @@ def http_trigger(req: func.HttpRequest) -> func.HttpResponse:
         "my_main worked properly.",
         status_code=200
     )
+'''
 
 # seconda funzione per test (_tiziano_)
-@app.route(route="http_trigger2_test_tt", auth_level=func.AuthLevel.FUNCTION)
-def http_trigger2_test_tt(req: func.HttpRequest) -> func.HttpResponse:
-    logging.info('trigger http 2 di test')
+@app.route(route="http_trigger_azione_manuale", auth_level=func.AuthLevel.FUNCTION)
+def http_trigger_azione_manuale(req: func.HttpRequest) -> func.HttpResponse:
+    logging.info('trigger http azione manuale')
 
 # eseguo un codice parallelo per debuggare la connessione al db
     azione = req.params.get("azione")
-    if azione == "up_bollettini": up_bollettini()
-    elif azione == "up_forecast": up_forecast()
-    elif azione == "my_main_debug": my_main_debug()
+    if azione == "forecast": forecast()
+    elif azione == "bollettino": bollettino_arpae()
+    elif azione == "update_bollettini": up_bollettini()
     else: logging.info("nessuna azione eseguita")
     
     return func.HttpResponse(
@@ -64,9 +66,9 @@ def http_trigger2_test_tt(req: func.HttpRequest) -> func.HttpResponse:
     run_on_startup=False,
     use_monitor=True
 )
-def daily_job(timer: func.TimerRequest) -> None:
+def update_bollettino(timer: func.TimerRequest) -> None:
     logging.info("Esecuzione job giornaliero")
-    my_main_debug()  # Esegui la funzione per il job giornaliero
+    bollettino_arpae()  # Esegui la funzione per il job giornaliero
     logging.info("Job giornaliero completato")
 
 '''@app.timer_trigger(
@@ -95,5 +97,5 @@ def update_bollettini(timer: func.TimerRequest) -> None:
 )
 def update_forecast(timer: func.TimerRequest) -> None:
     logging.info("Esecuzione update forecast")
-    up_forecast()  # Esegui la funzione per update bollettini
+    forecast()  # Esegui la funzione per update bollettini
     logging.info("update forecast completato")
