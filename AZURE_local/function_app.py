@@ -59,7 +59,7 @@ def http_trigger2_test_tt(req: func.HttpRequest) -> func.HttpResponse:
 
 @app.timer_trigger(
 #esecuzione giornaliera scarico del bollettino alle 01:00
-    schedule="0 0 1 * * *",
+    schedule="0 35 5 * * *",
     arg_name="timer",
     run_on_startup=False,
     use_monitor=True
@@ -72,14 +72,14 @@ def daily_job(timer: func.TimerRequest) -> None:
 @app.timer_trigger(
 # esecuzione giornaliera update tabella bollettini
 # eseguita dopo lo scarico del bollettino
-    schedule="0 20 1 * * *",
+    schedule="0 50 5 * * *",
     arg_name="timer",
     run_on_startup=False,
     use_monitor=True
 )
 def update_bollettini(timer: func.TimerRequest) -> None:
     logging.info("Esecuzione update bollettini")
-    up_bollettini()  # Esegui la funzione per update bollettini
+#    up_bollettini()  # Esegui la funzione per update bollettini
     logging.info("update bollettini completato")
 
 @app.timer_trigger(

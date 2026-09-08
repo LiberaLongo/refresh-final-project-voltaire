@@ -9,6 +9,7 @@ from pathlib import Path
 import requests
 from datetime import datetime
 from zoneinfo import ZoneInfo
+import time
 
 def my_main_debug():
 	# legge le variabili di ambiente per la connessione al db
@@ -42,27 +43,39 @@ def my_main_debug():
 	url = "https://dati.arpae.it/datastore/dump/4dc855a1-6298-4b71-a1ae-d80693d43dcb?bom=True"
 	file_path = "/home/arpae.csv"
 
-	response = requests.get(url, stream=True, timeout=120)
-	response.raise_for_status()
+	for tentativo in range(3):
+		try:
+			response = requests.get(url, stream=True, timeout=120)
+			response.raise_for_status()
 
-	with open(file_path, "wb") as f:
-		for chunk in response.iter_content(chunk_size=1024 * 1024):
-			if chunk:
-				f.write(chunk)
+			with open(file_path, "wb") as f:
+				for chunk in response.iter_content(chunk_size=1024 * 1024):
+					if chunk:
+						f.write(chunk)
 
-	print(f"CSV salvato in {file_path}")
-	logging.info(f"main_debug: CSV salvato in {file_path}")
+			print(f"CSV salvato in {file_path}")
+			logging.info(f"main_debug: CSV salvato in {file_path}")
 
-	logging.info("main_debug: lettura csv da ARPAE scaricato")
-	df = pd.read_csv("/home/arpae.csv", encoding="utf-8-sig")
+			logging.info("main_debug: lettura csv da ARPAE scaricato")
+			df = pd.read_csv("/home/arpae.csv", encoding="utf-8-sig")
 
-	logging.info("main_debug: scrittura su db del bollettino misure aria")
-	data = datetime.now(ZoneInfo("Europe/Rome")).strftime("%Y-%m-%d")
-	data_ora = datetime.now(ZoneInfo("Europe/Rome")).strftime("%Y-%m-%d_%H-%M-%S")
-	df.to_sql(name=f"bollettino_misure_aria_{data_ora}", con=engine, schema="bollettini", 
-			   if_exists="replace", index=False)
-	df.to_sql(name="staging_bollettino", con=engine, schema="silver", 
-			   if_exists="replace", index=False)
+			logging.info("main_debug: scrittura su db del bollettino misure aria")
+			data = datetime.now(ZoneInfo("Europe/Rome")).strftime("%Y-%m-%d")
+			data_ora = datetime.now(ZoneInfo("Europe/Rome")).strftime("%Y-%m-%d_%H-%M-%S")
+			df.to_sql(name=f"bollettino_misure_aria_{data_ora}", con=engine, schema="bollettini", 
+					if_exists="replace", index=False)
+			df.to_sql(name="staging_bollettino", con=engine, schema="silver", 
+					if_exists="replace", index=False)
+			up_bollettini()
+			
+			break
+		except requests.exceptions.HTTPError as e:
+			if response.status_code == 502 and tentativo <= 2:
+				logging.warning(f"main_debug: Errore 502 Bad Gateway, tentativo {tentativo + 1} di 3. Riprovo tra {300 ** tentativo} secondi...")
+				time.sleep(300 ** tentativo)
+			else:
+				raise
+
 	
 	logging.info("main_debug: ---FINE FUNCTION APP---")
 	
