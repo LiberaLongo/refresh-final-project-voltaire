@@ -1490,7 +1490,21 @@ GROUP BY
     cg.comune, cg.sigla_provincia
 ;
 
-	
+
+
+-- cosa succede di strano con i bollettini alle 5:20?!?
+select count(*) from bollettini."bollettino_misure_aria_2026-09-08_05-20-51" bma;
+
+select count(*) from bollettini."bollettino_misure_aria_2026-09-08_05-35-31" bma ;
+
+select *, 'vecchia' as tab
+from bollettini."bollettino_misure_aria_2026-09-08_05-20-51" bma 
+where bma.station_id = 5000007 and bma.reftime = '08/10/2026 00:00'
+union 
+select *, 'nuova' as tab
+from bollettini."bollettino_misure_aria_2026-09-08_05-35-31" bma 
+where bma.station_id = 5000007 and bma.reftime = '08/10/2026 00:00'
+
 	
 
 
