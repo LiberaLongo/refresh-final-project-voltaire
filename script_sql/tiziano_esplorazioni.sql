@@ -1571,6 +1571,34 @@ create view gold.fatto_misure as (
 select * 
 from silver.bollettini b 
 where b.value <0;
+select * 
+from silver.bollettini b 
+where b.value <0;
+
+
+-- creazione tabella ETL_errata_bollettini
+CREATE TABLE silver.etl_errata_bollettini (
+	station_id int8 NULL,
+	variable_id int8 NULL,
+	reftime text NULL,
+	value float8 NULL,
+	v_flag text NULL,
+	time_acquisizione timestamptz NULL
+);
+
+-- inserimento righe errate da ultimo bollettino in etl_errata...
+INSERT INTO silver.etl_errata_bollettini (
+		station_id, variable_id, reftime, value, v_flag, time_acquisizione)
+		select station_id, variable_id, reftime, value, v_flag, time_acquisizione
+		FROM bronze.ultimo_bollettino
+		WHERE value is NULL or value < 0
+		      or station_id is null 
+		      or variable_id is null 
+		      or reftime is null 
+		      or v_flag is null 
+;
+
+
 
 select count(*)
 from silver.bollettini b ;

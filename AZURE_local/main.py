@@ -99,14 +99,30 @@ def up_bollettini():
 						station_id, variable_id, reftime, value, v_flag, time_acquisizione)
 					SELECT station_id, variable_id, reftime, value, v_flag, time_acquisizione
 					FROM bronze.ultimo_bollettino
+					WHERE not (value is NULL or value < 0
+			  			or station_id is null 
+			  			or variable_id is null 
+			  			or reftime is null 
+			  			or v_flag is null) 
 					ON CONFLICT (station_id, variable_id, reftime)
 					DO UPDATE SET 
 						value = EXCLUDED.value,
 						v_flag = EXCLUDED.v_flag,
 						time_acquisizione = EXCLUDED.time_acquisizione
+					;					;
+-- inserimento degli eventuali scarti in tabella
+					INSERT INTO silver.etl_errata_bollettini (
+						station_id, variable_id, reftime, value, v_flag, time_acquisizione)
+						select station_id, variable_id, reftime, value, v_flag, time_acquisizione
+						FROM bronze.ultimo_bollettino
+						WHERE value is NULL or value < 0
+			  				or station_id is null 
+			  				or variable_id is null 
+			  				or reftime is null 
+			  				or v_flag is null 
 					;
-            	""")
-        		)
+				""")
+				)
 	except Exception as e:
 		logging.exception(f"update_bollettini: Errore durante l'aggiornamento della tabella cumulativa bollettini: {e}")
 		raise
@@ -234,8 +250,8 @@ def forecast():
 					select 
 					current_date::timestamp + time * INTERVAL '1 hour' as ora,
 					latitude as lat, longitude as lon, 
-       	   			p.lat_index, p.lon_index,
-       	   			pm10_conc as pm10
+	   	   			p.lat_index, p.lon_index,
+	   	   			pm10_conc as pm10
 					from silver.forecast_pm10 fp 
 					left join lateral silver.punto_griglia(fp.latitude::numeric, fp.longitude::numeric) p
 					ON TRUE
@@ -243,7 +259,7 @@ def forecast():
 				SELECT cg.comune, cg.sigla_provincia, f.ora, f.pm10
 				FROM silver.comuni_geogrid cg
 				JOIN forecast f
-    			ON cg.lat_index = f.lat_index AND cg.lon_index = f.lon_index 
+				ON cg.lat_index = f.lat_index AND cg.lon_index = f.lon_index 
 				);
 			"""))
 
