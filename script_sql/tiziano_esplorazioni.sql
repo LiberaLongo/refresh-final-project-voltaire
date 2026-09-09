@@ -1671,3 +1671,5 @@ create table gold.bridge_staz_param as
 	FROM silver.staz_param;
 
 
+
+
