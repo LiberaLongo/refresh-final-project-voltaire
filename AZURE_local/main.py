@@ -224,35 +224,30 @@ def forecast():
 
 	engine = create_engine(connection_string())
 
-#   cancellazione vecchia view forecast_comunipm10
-	logging.info("inizio cancellazione vecchia view forecast_comuni_pm10")
-	with engine.begin() as conn:
-		conn.execute(text("DROP VIEW if exists gold.forecast_comuni_pm10;"))
-	logging.info("cancellata la vecchia view forecast_comuni_pm10")
-
 #   caricamento della tabella su postgres
 	logging.info("caricamento tabella su postgres...")
 	df.to_sql(
 		"forecast_pm10",
 		engine,
-		schema= "silver",
+		schema= "bronze",
 		if_exists="replace",
 		index=False
 	)
 	logging.info("caricamento tabella su postgres terminata. OK")
 
-# creazione della view forecast_comuni_pm10
-	logging.info("inizio creazione view forecast_comuni_pm10")
+# creazione della tabella in silver forecast_comuni_pm10
+	logging.info("inizio creazione table forecast_comuni_pm10")
 	with engine.begin() as conn:
 		conn.execute(text(""" 
-			create view gold.forecast_comuni_pm10 as ( 
+			drop table if exists silver.forecast_comuni_pm10 CASCADE;
+			create table silver.forecast_comuni_pm10 as ( 
 				with forecast as (
 					select 
 					current_date::timestamp + time * INTERVAL '1 hour' as ora,
 					latitude as lat, longitude as lon, 
 	   	   			p.lat_index, p.lon_index,
 	   	   			pm10_conc as pm10
-					from silver.forecast_pm10 fp 
+					from bronze.forecast_pm10 fp 
 					left join lateral silver.punto_griglia(fp.latitude::numeric, fp.longitude::numeric) p
 					ON TRUE
 					)
@@ -260,6 +255,11 @@ def forecast():
 				FROM silver.comuni_geogrid cg
 				JOIN forecast f
 				ON cg.lat_index = f.lat_index AND cg.lon_index = f.lon_index 
+				);
+			drop view if exists gold.forecast_comuni_pm10;
+			create view gold.forecast_comuni_pm10 as (
+				select comune, sigla_provincia, ora::date as giorno, extract(hour from ora) as ora, pm10
+				from silver.forecast_comuni_pm10
 				);
 			"""))
 

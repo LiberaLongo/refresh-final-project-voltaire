@@ -1598,8 +1598,26 @@ INSERT INTO silver.etl_errata_bollettini (
 		      or v_flag is null 
 ;
 
+					INSERT INTO silver.bollettini (
+						station_id, variable_id, reftime, value, v_flag, time_acquisizione)
+					SELECT station_id, variable_id, reftime, value, v_flag, time_acquisizione
+					FROM bronze.ultimo_bollettino
+					WHERE not (value is NULL or value < 0
+		      			or station_id is null 
+		      			or variable_id is null 
+		      			or reftime is null 
+		      			or v_flag is null) 
+					ON CONFLICT (station_id, variable_id, reftime)
+					DO UPDATE SET 
+						value = EXCLUDED.value,
+						v_flag = EXCLUDED.v_flag,
+						time_acquisizione = EXCLUDED.time_acquisizione
+					;
 
 
+	      
+		      
+-- ---------------------------		      
 select count(*)
 from silver.bollettini b ;
 
