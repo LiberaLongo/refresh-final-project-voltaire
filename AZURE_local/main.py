@@ -8,8 +8,11 @@ from pathlib import Path
 import requests
 from zoneinfo import ZoneInfo
 import time
-import cdsapi
 from datetime import datetime, timezone
+import cdsapi
+import zipfile
+import xarray as xr
+
 
 def connection_string():
 	# legge le variabili di ambiente per la connessione al db
@@ -100,10 +103,10 @@ def up_bollettini():
 					SELECT station_id, variable_id, reftime, value, v_flag, time_acquisizione
 					FROM bronze.ultimo_bollettino
 					WHERE not (value is NULL or value < 0
-			  			or station_id is null 
-			  			or variable_id is null 
-			  			or reftime is null 
-			  			or v_flag is null) 
+						  or station_id is null 
+						  or variable_id is null 
+						  or reftime is null 
+						  or v_flag is null) 
 					ON CONFLICT (station_id, variable_id, reftime)
 					DO UPDATE SET 
 						value = EXCLUDED.value,
@@ -116,10 +119,10 @@ def up_bollettini():
 						select station_id, variable_id, reftime, value, v_flag, time_acquisizione
 						FROM bronze.ultimo_bollettino
 						WHERE value is NULL or value < 0
-			  				or station_id is null 
-			  				or variable_id is null 
-			  				or reftime is null 
-			  				or v_flag is null 
+							  or station_id is null 
+							  or variable_id is null 
+							  or reftime is null 
+							  or v_flag is null 
 					;
 				""")
 				)
@@ -206,15 +209,12 @@ def forecast():
 		logging.info("fine cancellazione file keys")
 
 	# passo aggiuntivo unzip del pacchetto scaricato
-	import zipfile
 	with zipfile.ZipFile(zip_file, "r") as zip_ref: 
 		zip_ref.extractall(home)
 
 	logging.info("fine unzip del file scaricato")
 
 	# lettura del file .nc e conversione in dataframe pandas
-	import xarray as xr
-
 	logging.info("conversione del file in dataframe")
 
 	nc_file = home / "ENS_FORECAST.nc"
@@ -245,8 +245,8 @@ def forecast():
 					select 
 					current_date::timestamp + time * INTERVAL '1 hour' as ora,
 					latitude as lat, longitude as lon, 
-	   	   			p.lat_index, p.lon_index,
-	   	   			pm10_conc as pm10
+						  p.lat_index, p.lon_index,
+						  pm10_conc as pm10
 					from bronze.forecast_pm10 fp 
 					left join lateral silver.punto_griglia(fp.latitude::numeric, fp.longitude::numeric) p
 					ON TRUE
