@@ -42,7 +42,7 @@ def bollettino_arpae():
 # e le validazioni differenti T,G,M,S da ARPAE
 # url = 'https://dati.arpae.it/datastore/dump/4dc855a1-6298-4b71-a1ae-d80693d43dcb?bom=True'
 
-	logging.info("main_debug: download csv da ARPAE")
+	logging.info("bollettino ARPAE: download csv da ARPAE")
 
 	url = "https://dati.arpae.it/datastore/dump/4dc855a1-6298-4b71-a1ae-d80693d43dcb?bom=True"
 	file_path = "/home/arpae.csv"
@@ -58,13 +58,12 @@ def bollettino_arpae():
 						f.write(chunk)
 
 			print(f"CSV salvato in {file_path}")
-			logging.info(f"main_debug: CSV salvato in {file_path}")
+			logging.info(f"bollettino ARPAE: CSV salvato in {file_path}")
 
-			logging.info("main_debug: lettura csv da ARPAE scaricato")
+			logging.info("bollettino ARPAE: lettura csv da ARPAE scaricato")
 			df = pd.read_csv("/home/arpae.csv", encoding="utf-8-sig")
 
-			logging.info("main_debug: scrittura su db del bollettino misure aria")
-			data = datetime.now(ZoneInfo("Europe/Rome")).strftime("%Y-%m-%d")
+			logging.info("bollettino ARPAE: scrittura su db del bollettino misure aria")
 			data_ora = datetime.now(ZoneInfo("Europe/Rome")).strftime("%Y-%m-%d_%H-%M-%S")
 			df.to_sql(name=f"bollettino_misure_aria_{data_ora}", con=engine, schema="bollettini", 
 					if_exists="replace", index=False)
@@ -77,13 +76,12 @@ def bollettino_arpae():
 			break
 		except requests.exceptions.HTTPError as e:
 			if response.status_code == 502 and tentativo <= 2:
-				logging.warning(f"main_debug: Errore 502 Bad Gateway, tentativo {tentativo + 1} di 3. Riprovo tra {300 ** tentativo} secondi...")
-				time.sleep(30 ** tentativo)
+				logging.warning(f"bollettino ARPAE: Errore 502 Bad Gateway, tentativo {tentativo + 1} di 3. Riprovo tra {300 ** tentativo} secondi...")
+				time.sleep(2 ** tentativo)
 			else:
 				raise
 
-	
-	logging.info("main_debug: ---FINE FUNCTION APP---")
+	logging.info("bollettino ARPAE: ---FINE FUNCTION APP---")
 	
 	return
 
