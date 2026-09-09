@@ -64,6 +64,8 @@ def bollettino_arpae():
 			data_ora = datetime.now(ZoneInfo("Europe/Rome")).strftime("%Y-%m-%d_%H-%M-%S")
 			df.to_sql(name=f"bollettino_misure_aria_{data_ora}", con=engine, schema="bollettini", 
 					if_exists="replace", index=False)
+# aggiunta della colonna 'timestamp_acquisizione' per l'ultimo bollettino
+			df["time_acquisizione"] = datetime.now(ZoneInfo("Europe/Rome"))
 			df.to_sql(name="ultimo_bollettino", con=engine, schema="bronze", 
 					if_exists="replace", index=False)
 			up_bollettini()
@@ -105,22 +107,23 @@ def up_bollettini():
 	logging.info("update_bollettini: creato il motore di connessione al db completata")
 
 # 	esegue l'update della tabella cumulativa bollettini
-#   aggiornando con i valori di staging_bollettino giornaliero
+#   aggiornando con i valori di ultimo_bollettino giornaliero
 	try:
 		with engine.begin() as conn:
 			conn.execute(
 				text("""
 					INSERT INTO silver.bollettini (
-						station_id, variable_id, reftime, value, v_flag)
-					SELECT station_id, variable_id, reftime, value, v_flag
-				FROM bronze.ultimo_bollettino
-				ON CONFLICT (station_id, variable_id, reftime)
-				DO UPDATE SET 
-					value = EXCLUDED.value,
-					v_flag = EXCLUDED.v_flag
-				;
-            """)
-        )
+						station_id, variable_id, reftime, value, v_flag, time_acquisizione)
+					SELECT station_id, variable_id, reftime, value, v_flag, time_acquisizione
+					FROM bronze.ultimo_bollettino
+					ON CONFLICT (station_id, variable_id, reftime)
+					DO UPDATE SET 
+						value = EXCLUDED.value,
+						v_flag = EXCLUDED.v_flag,
+						time_acquisizione = EXCLUDED.time_acquisizione
+					;
+            	""")
+        		)
 	except Exception as e:
 		logging.exception(f"update_bollettini: Errore durante l'aggiornamento della tabella cumulativa bollettini: {e}")
 		raise

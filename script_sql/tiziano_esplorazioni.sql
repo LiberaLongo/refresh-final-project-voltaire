@@ -1506,6 +1506,9 @@ from bollettini."bollettino_misure_aria_2026-09-08_05-35-31" bma
 where bma.station_id = 5000007 and bma.reftime = '08/10/2026 00:00'
 
 
+
+
+
 -- creazione fatto_misure
 DROP TABLE if exists silver.fatto_misure_00;
 CREATE TABLE silver.fatto_misure_00 as (
@@ -1562,4 +1565,42 @@ drop view if exists gold.fatto_misure;
 create view gold.fatto_misure as (
 	select * from silver.fatto_misure fm 
 );
+
+
+-- verifiche su mancanze in bollettini cumulati
+select * 
+from silver.bollettini b 
+where b.value <0;
+
+select count(*)
+from silver.bollettini b ;
+
+
+-- verifiche su valori nulli in misure storiche
+select count(*) from bronze.o3 o
+where o.valore is null;
+select count(*) from bronze.no2 n 
+where n.valore is null;
+select count(*) from bronze.co c 
+where c.valore is null;
+select count(*) from bronze.pm10 p 
+where p.valore is null;
+select count(*) from bronze.pm25 p
+where p.valore is null;
+
+
+-- aggiunta di una colonna a bollettini cumulati
+-- modifica di silver.bollettini
+CREATE TABLE silver.bollettini_backup AS
+SELECT station_id, variable_id, reftime, value, v_flag
+FROM silver.bollettini;
+
+ALTER TABLE silver.bollettini
+ADD COLUMN time_acquisizione TIMESTAMPTZ;
+UPDATE silver.bollettini
+SET time_acquisizione = CURRENT_TIMESTAMP;
+
+
+
+
 
