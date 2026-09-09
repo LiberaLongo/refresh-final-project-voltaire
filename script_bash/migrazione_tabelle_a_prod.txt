@@ -1,0 +1,28 @@
+# fa il dump di 10 tabelle dati presenti in bronze in dev
+/c/Programmi/PostgreSQL/18/bin/pg_dump \
+  -h db-volt-dev.postgres.database.azure.com \
+  -U voltadmin \
+  -d postgres \
+  -t bronze.aria_anagrafe_stazioni \
+  -t bronze.aria_parametri_inquinanti \
+  -t bronze.cityranking_eu \
+  -t bronze.pm10 \
+  -t bronze.pm25 \
+  -t bronze.o3 \
+  -t bronze.no2 \
+  -t bronze.co \
+  -t bronze.comuni_geo \
+  -t bronze.criteri_superamento \
+  -F c \
+  -f migrazione_bronze.dump
+
+# questa riga serve solo per visualizzare che cosa è presente nel 
+# file di dump sul proprio PC
+/c/Programmi/PostgreSQL/18/bin/pg_restore -l migrazione_bronze.dump
+
+# fa il restore su PROD di quanto presente di tabelle nel file di dump
+/c/Programmi/PostgreSQL/18/bin/pg_restore \
+  -h db-volt-prod.postgres.database.azure.com \
+  -U voltadmin \
+  -d postgres \
+  migrazione_bronze.dump
