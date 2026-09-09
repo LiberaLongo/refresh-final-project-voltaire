@@ -1,49 +1,252 @@
 #!/usr/bin/env python3
+
 import logging
-from m_read import read
-from m_upload_db import import_to_db
+import os
+from sqlalchemy import create_engine, text
+import pandas as pd
+from pathlib import Path
+import requests
+from zoneinfo import ZoneInfo
+import time
+import cdsapi
+from datetime import datetime, timezone
 
-import datetime;
+def connection_string():
+	# legge le variabili di ambiente per la connessione al db
+	HOST = os.getenv("DB_HOST")
+	PORT = os.getenv("DB_PORT")
+	DB_NAME = os.getenv("DB_NAME")
+	USER = os.getenv("DB_USER")
+	PASSWORD = os.getenv("DB_PASSWORD")
 
-def my_main():
-	# premessa: oggi otteniamo i dati di ieri
+	# verifica su log che una variabile sia letta correttamente
+	logging.info(f"DB_HOST = {HOST}")
 
-	# oggi
-	today = datetime.date.today()
-	# i 3 giorni precedenti
-	yesterday		= today - datetime.timedelta(days=1)
-	two_days_ago	= today - datetime.timedelta(days=2)
-	three_days_ago	= today - datetime.timedelta(days=3)
+	# costruisce la stringa di connessione al db
+	if USER and PASSWORD and HOST and PORT and DB_NAME:
+			connection_str = (
+				f"postgresql://{USER}:{PASSWORD}@{HOST}:{PORT}/{DB_NAME}"
+			)
+	else:
+		logging.info("Errore: .env is not configured correctly --> connection_str contains None values")
+		raise SystemExit(1)
 
-	array_of_days = [
-			yesterday,
-			two_days_ago,
-			three_days_ago
-		]
+	return connection_str
 
-	logging.info(f"days: {array_of_days} - definizione array giorni")
+def bollettino_arpae():
+	
+#	crea il motore di connessione al db
+	engine = create_engine(connection_string())
 
-	logging.info("start - lettura dei json e popolamento della tabella")
-	#tabella vuota
-	table = []
-	for day in array_of_days:
-		# popolo la tabella con i dati presi dai json
-		table = read(day, table)
-	logging.info("end - lettura dei json e popolamento della tabella")
+# download file csv con le misure giornaliere
+# e le validazioni differenti T,G,M,S da ARPAE
+# url = 'https://dati.arpae.it/datastore/dump/4dc855a1-6298-4b71-a1ae-d80693d43dcb?bom=True'
 
-	logging.info("table = [")
-	for i in table:
-		logging.info(f"\t{i} ,")
-	logging.info("]")
+	logging.info("main_debug: download csv da ARPAE")
 
-	# specifico come chiamare le colonne
-	columns = [
-		"timestamp", "provincia",
-		"id_stazione", "stazione", "tipo_stazione",
-		"pm25", "pm10", "pm10_sup_giorni",
-		"o3_media_oraria_max", "o3_media_8_ore_max", "o3_sup_ore",
-		"no2", "co", "c6h6", "so2", "no2_sup_ore"
-	]
+	url = "https://dati.arpae.it/datastore/dump/4dc855a1-6298-4b71-a1ae-d80693d43dcb?bom=True"
+	file_path = "/home/arpae.csv"
 
-	# importo la tabella su postgres
-	import_to_db(table, columns)
+	for tentativo in range(3):
+		try:
+			response = requests.get(url, stream=True, timeout=120)
+			response.raise_for_status()
+
+			with open(file_path, "wb") as f:
+				for chunk in response.iter_content(chunk_size=1024 * 1024):
+					if chunk:
+						f.write(chunk)
+
+			print(f"CSV salvato in {file_path}")
+			logging.info(f"main_debug: CSV salvato in {file_path}")
+
+			logging.info("main_debug: lettura csv da ARPAE scaricato")
+			df = pd.read_csv("/home/arpae.csv", encoding="utf-8-sig")
+
+			logging.info("main_debug: scrittura su db del bollettino misure aria")
+			data = datetime.now(ZoneInfo("Europe/Rome")).strftime("%Y-%m-%d")
+			data_ora = datetime.now(ZoneInfo("Europe/Rome")).strftime("%Y-%m-%d_%H-%M-%S")
+			df.to_sql(name=f"bollettino_misure_aria_{data_ora}", con=engine, schema="bollettini", 
+					if_exists="replace", index=False)
+# aggiunta della colonna 'timestamp_acquisizione' per l'ultimo bollettino
+			df["time_acquisizione"] = datetime.now(ZoneInfo("Europe/Rome"))
+			df.to_sql(name="ultimo_bollettino", con=engine, schema="bronze", 
+					if_exists="replace", index=False)
+			up_bollettini()
+			
+			break
+		except requests.exceptions.HTTPError as e:
+			if response.status_code == 502 and tentativo <= 2:
+				logging.warning(f"main_debug: Errore 502 Bad Gateway, tentativo {tentativo + 1} di 3. Riprovo tra {300 ** tentativo} secondi...")
+				time.sleep(30 ** tentativo)
+			else:
+				raise
+
+	
+	logging.info("main_debug: ---FINE FUNCTION APP---")
+	
+	return
+
+def up_bollettini():
+	engine = create_engine(connection_string())
+	logging.info("update_bollettini: creato il motore di connessione al db completata")
+
+# 	esegue l'update della tabella cumulativa bollettini
+#   aggiornando con i valori di ultimo_bollettino giornaliero
+	try:
+		with engine.begin() as conn:
+			conn.execute(
+				text("""
+					INSERT INTO silver.bollettini (
+						station_id, variable_id, reftime, value, v_flag, time_acquisizione)
+					SELECT station_id, variable_id, reftime, value, v_flag, time_acquisizione
+					FROM bronze.ultimo_bollettino
+					ON CONFLICT (station_id, variable_id, reftime)
+					DO UPDATE SET 
+						value = EXCLUDED.value,
+						v_flag = EXCLUDED.v_flag,
+						time_acquisizione = EXCLUDED.time_acquisizione
+					;
+            	""")
+        		)
+	except Exception as e:
+		logging.exception(f"update_bollettini: Errore durante l'aggiornamento della tabella cumulativa bollettini: {e}")
+		raise
+
+	logging.info("update_bollettini: aggiornata la tabella cumulativa bollettini. Completato, OK!")
+
+	try:
+		with engine.begin() as conn:
+			conn.execute(
+				text("""
+					drop view if exists gold.bollettini;
+					create view gold.bollettini as ( 
+						select station_id, ds.stazione, ds.comune, ds.indirizzo, ds.provincia,
+							variable_id, dp.parametro, dp.um,
+							reftime::date as giorno,
+							right(reftime, 5)::time as ora,
+							value, v_flag
+						from silver.bollettini b
+						join silver.dim_stazioni ds on ds.cod_staz = b.station_id 
+						join silver.dim_parametri dp on dp.id_parametro = b.variable_id
+						where variable_id in (5, 111, 7, 8, 10)
+						);
+			""")
+		)
+	except Exception as e:
+		logging.exception(f"update_bollettini: Errore durante la creazione della view gold.bollettini: {e}")
+		raise
+
+	logging.info("update_bollettini: aggiornata la view gold.bollettini. Completato, OK!")
+
+	return
+
+def forecast():
+	# Copernico - CAMS - pipeline forecast pm10
+	# download dei dati CAMS (Copernicus Atmosphere Monitoring Service) 
+	# dati ristretti all'area geografica compresa 
+	# tra latitudine 45.2 e 44.0 e longitudine 9.0 e 13.0 (Italia settentrionale).
+
+	today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+	# definisce il file per accesso a Copernicus
+	cdsapirc = Path.home() / ".cdsapirc"
+	logging.info("definisce il nome del file con key accesso")
+
+	try:
+		# Crea il file necessario a cdsapi
+		cdsapirc.write_text(
+			f"""url: https://ads.atmosphere.copernicus.eu/api 
+			key: {os.environ["COPERNICUS_API_KEY"]}
+			"""
+			)
+		logging.info("creato il file key accesso")
+
+		dataset = "cams-europe-air-quality-forecasts"
+
+		request = {
+			"variable": ["particulate_matter_10um"],
+			"model": ["ensemble"],
+			"level": ["0"],
+			"type": ["forecast"],
+			"date": [today],
+			"time": ["00:00"],
+			"leadtime_hour": [str(i) for i in range(96)], 
+			"data_format": "netcdf_zip",
+			"area": [45.2, 9, 43.7, 13]
+		}
+		home = Path.home()
+		zip_file = home / "pm10-forecast.nc.zip"
+#       scarica il file zippato nella home
+
+		logging.info("inizio richiesta a Copernico")
+		client = cdsapi.Client()
+		client.retrieve(dataset, request).download(zip_file)
+		logging.info("fine richiesta a Copernico, ok.")
+
+	finally:
+		# Cancella sempre il file cdsapirc, anche in caso di errore
+		logging.info("cancellazione file keys")
+		if cdsapirc.exists():
+			cdsapirc.unlink()
+		logging.info("fine cancellazione file keys")
+
+	# passo aggiuntivo unzip del pacchetto scaricato
+	import zipfile
+	with zipfile.ZipFile(zip_file, "r") as zip_ref: 
+		zip_ref.extractall(home)
+
+	logging.info("fine unzip del file scaricato")
+
+	# lettura del file .nc e conversione in dataframe pandas
+	import xarray as xr
+
+	logging.info("conversione del file in dataframe")
+
+	nc_file = home / "ENS_FORECAST.nc"
+	ds = xr.open_dataset(nc_file)
+
+	df = ds.to_dataframe().reset_index()
+
+	engine = create_engine(connection_string())
+
+#   cancellazione vecchia view forecast_comunipm10
+	logging.info("inizio cancellazione vecchia view forecast_comuni_pm10")
+	with engine.begin() as conn:
+		conn.execute(text("DROP VIEW if exists gold.forecast_comuni_pm10;"))
+	logging.info("cancellata la vecchia view forecast_comuni_pm10")
+
+#   caricamento della tabella su postgres
+	logging.info("caricamento tabella su postgres...")
+	df.to_sql(
+		"forecast_pm10",
+		engine,
+		schema= "silver",
+		if_exists="replace",
+		index=False
+	)
+	logging.info("caricamento tabella su postgres terminata. OK")
+
+# creazione della view forecast_comuni_pm10
+	logging.info("inizio creazione view forecast_comuni_pm10")
+	with engine.begin() as conn:
+		conn.execute(text(""" 
+			create view gold.forecast_comuni_pm10 as ( 
+				with forecast as (
+					select 
+					current_date::timestamp + time * INTERVAL '1 hour' as ora,
+					latitude as lat, longitude as lon, 
+       	   			p.lat_index, p.lon_index,
+       	   			pm10_conc as pm10
+					from silver.forecast_pm10 fp 
+					left join lateral silver.punto_griglia(fp.latitude::numeric, fp.longitude::numeric) p
+					ON TRUE
+					)
+				SELECT cg.comune, cg.sigla_provincia, f.ora, f.pm10
+				FROM silver.comuni_geogrid cg
+				JOIN forecast f
+    			ON cg.lat_index = f.lat_index AND cg.lon_index = f.lon_index 
+				);
+			"""))
+
+	return

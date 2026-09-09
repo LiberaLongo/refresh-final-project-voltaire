@@ -1,10 +1,6 @@
 import logging
 import azure.functions as func
-from main import my_main
-
-# aggiunta TT
-# seplice prova di modifica codice attraverso il tablet
-from main_debug import bollettino_arpae, up_bollettini, forecast
+from main import bollettino_arpae, up_bollettini, forecast
 
 app = func.FunctionApp()
 
