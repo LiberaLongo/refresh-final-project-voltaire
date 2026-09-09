@@ -1647,6 +1647,27 @@ UPDATE silver.bollettini
 SET time_acquisizione = CURRENT_TIMESTAMP;
 
 
-
+-- sposto le dim da silver in gold (view) 
+-- tutto ciò va poi nella pipeline main
+-- dim_season
+drop view if exists gold.dim_season;
+create view gold.dim_season as 
+	SELECT id_season, "name"
+	FROM silver.dim_season;
+drop view if exists gold.dim_stazioni;
+create view gold.dim_stazioni as
+	SELECT cod_staz, stazione, comune, indirizzo, provincia, altezza, coord_x, coord_y, lon_geo, lat_geo, sr, sr_geo
+	FROM silver.dim_stazioni;
+drop view if exists gold.dim_inquinanti;
+create view gold.dim_inquinanti as
+	SELECT id_parametro, 
+	       parametro as inquinante, 
+	       um, tmed_min, note
+	FROM silver.dim_parametri
+	WHERE id_parametro in (5, 7, 8, 10, 111);
+drop view if exists gold.bridge_staz_param;
+create table gold.bridge_staz_param as
+	SELECT cod_staz, id_param
+	FROM silver.staz_param;
 
 
