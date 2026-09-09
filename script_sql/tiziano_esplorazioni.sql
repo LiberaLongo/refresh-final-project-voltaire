@@ -1671,5 +1671,14 @@ create table gold.bridge_staz_param as
 	FROM silver.staz_param;
 
 
+--verifiche post migrazione PROD
 
+select count(*)
+from bronze.cityranking_eu ce ;
+
+SELECT
+    COUNT(*) AS n,
+    MIN(ce. ) AS min_id,
+    MAX(id) AS max_id
+FROM bronze.cityranking_eu ce ;
 

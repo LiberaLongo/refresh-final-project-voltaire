@@ -402,3 +402,44 @@ create view gold.city_ranking as (
 		   lat, long, rank, pm25, rank_pm25, o3, rank_o3, no2, rank_no2
 	FROM silver.city_ranking
 );
+
+--------------
+-- FORECAST --
+--------------
+
+-- allestimento tabelle e funzioni per la pipeline forecast
+
+-- creazione della funzione silver.punto_griglia
+-- per l'assegnazione di punto griglia al centroide dei comuni
+CREATE OR REPLACE FUNCTION silver.punto_griglia(p_lat numeric, p_lon numeric)
+ RETURNS TABLE(lat_grid numeric, lon_grid numeric, lat_index integer, lon_index integer)
+ LANGUAGE sql
+ IMMUTABLE
+AS $function$
+    WITH indici AS (
+        SELECT
+            ROUND((p_lat - 43.75::NUMERIC) / 0.1::NUMERIC)::INTEGER AS i,
+            ROUND((p_lon - 9.05::NUMERIC)  / 0.1::NUMERIC)::INTEGER AS j
+    )
+    SELECT
+        43.75::NUMERIC + i * 0.1::NUMERIC,
+        9.05::NUMERIC  + j * 0.1::NUMERIC,
+        i,
+        j
+    FROM indici
+    WHERE i BETWEEN 0 AND 14
+      AND j BETWEEN 0 AND 39;
+$function$
+;
+
+-- creazione tabella silver.comuni_geogrid
+-- per associazione dei singoli comuni al punto griglia
+drop table if exists silver.comuni_geogrid CASCADE;
+create table silver.comuni_geogrid as ( 
+	select istat, comune, sigla_provincia, lat, lng,
+           p.lat_grid, p.lon_grid, p.lat_index, p.lon_index
+	from bronze.comuni_geo as cg
+	left join lateral silver.punto_griglia(cg.lat::numeric, cg.lng::numeric) p
+	ON TRUE
+	);	
+

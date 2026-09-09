@@ -1,8 +1,8 @@
 -- allestimento iniziale creazione degli schemi
-CREATE SCHEMA IF NOT EXISTS bronze;
-CREATE SCHEMA IF NOT EXISTS silver;
-CREATE SCHEMA IF NOT EXISTS gold;
-CREATE SCHEMA IF NOT EXISTS bollettini;
+-- CREATE SCHEMA IF NOT EXISTS bronze;
+-- CREATE SCHEMA IF NOT EXISTS silver;
+-- CREATE SCHEMA IF NOT EXISTS gold;
+-- CREATE SCHEMA IF NOT EXISTS bollettini;
 
 -- creazione tavola silver.bollettini cumulativa dei bollettini giornalieri
 CREATE TABLE silver.bollettini (
@@ -37,4 +37,14 @@ AS $function$
 $function$
 ;
 
+-- creazione tabella silver.comuni_geogrid
+-- per associazione dei singoli comuni al punto griglia
+drop table if exists silver.comuni_geogrid CASCADE;
+create table silver.comuni_geogrid as ( 
+	select istat, comune, sigla_provincia, lat, lng,
+           p.lat_grid, p.lon_grid, p.lat_index, p.lon_index
+	from bronze.comuni_geo as cg
+	left join lateral silver.punto_griglia(cg.lat::numeric, cg.lng::numeric) p
+	ON TRUE
+	);	
 
