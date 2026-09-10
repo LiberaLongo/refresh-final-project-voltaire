@@ -258,7 +258,7 @@ def forecast():
 				);
 			drop view if exists gold.forecast_comuni_pm10;
 			create view gold.forecast_comuni_pm10 as (
-				select comune, sigla_provincia, ora::date as giorno, extract(hour from ora) as ora, pm10
+				select comune, sigla_provincia, ora, pm10
 				from silver.forecast_comuni_pm10
 				);
 			"""))
