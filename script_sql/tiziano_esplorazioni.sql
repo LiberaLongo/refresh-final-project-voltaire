@@ -1660,7 +1660,7 @@ create view gold.dim_stazioni as
 	FROM silver.dim_stazioni;
 drop view if exists gold.dim_inquinanti;
 create view gold.dim_inquinanti as
-	SELECT id_parametro, 
+	SELECT id_parametro as id_param, 
 	       parametro as inquinante, 
 	       um, tmed_min, note
 	FROM silver.dim_parametri
