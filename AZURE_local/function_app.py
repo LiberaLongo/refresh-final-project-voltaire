@@ -1,6 +1,7 @@
 import logging
 import azure.functions as func
 from main import bollettino_arpae, up_bollettini, forecast
+from pipeline import launch_main_pipeline
 
 app = func.FunctionApp()
 
@@ -11,11 +12,18 @@ def http_trigger_azione_manuale(req: func.HttpRequest) -> func.HttpResponse:
 
 # eseguo un codice parallelo per debuggare la connessione al db
 	azione = req.params.get("azione")
-	if azione == "forecast": forecast()
-	elif azione == "bollettino": bollettino_arpae()
-	elif azione == "update_bollettini": up_bollettini()
-	else: logging.info("nessuna azione eseguita")
-	
+	match azione:
+		case "forecast":
+			forecast()
+		case "bollettino":
+			bollettino_arpae()
+		case "update_bollettini":
+			up_bollettini()
+		case "main_pipeline":
+			launch_main_pipeline()
+		case _:
+			logging.info("nessuna azione eseguita")
+		
 	return func.HttpResponse(
 		"trigger http 2 terminata correttamente.",
 		status_code=200
