@@ -1813,5 +1813,84 @@ create table silver.comuni_geo as (
 	where ig.istat::text like '99%' or (ig.istat >= 33000 and ig.istat<=40999) 
 	);
 
+drop table if exists silver.bollettini;
+CREATE TABLE silver.bollettini (
+	station_id int8 NULL,
+	variable_id int8 NULL,
+	reftime text NULL,
+	value float8 NULL,
+	v_flag text NULL,
+	time_acquisizione timestamptz NULL
+);
+CREATE UNIQUE INDEX idx_bollettini_station_variable_reftime ON silver.bollettini USING btree (station_id, variable_id, reftime);
 
 
+-- cazzate su tabelle pipeline bollettino
+-- creazione della tabella cumulativa silver.bollettini
+CREATE TABLE silver.bollettini (
+    station_id int8,
+   	variable_id int8,
+   	reftime text,
+   	value float8,
+   	v_flag text
+  	);
+-- definisco il costraint indice necessario
+
+drop index idx_bollettini_station_variable_reftime;
+CREATE UNIQUE INDEX idx_bollettini_station_variable_reftime
+ON silver.bollettini (station_id, variable_id, reftime);
+
+SELECT
+    conname,
+    contype,
+    pg_get_constraintdef(oid)
+FROM pg_constraint
+WHERE conrelid = 'silver.bollettini'::regclass;
+
+-- controllo se ci sono duplicati
+SELECT
+    station_id,
+    variable_id,
+    reftime,
+    COUNT(*)
+FROM silver.bollettini
+GROUP BY station_id, variable_id, reftime
+HAVING COUNT(*) > 1;
+
+SELECT
+    current_database(),
+    current_schema(),
+    inet_server_addr();
+
+
+INSERT INTO silver.bollettini (
+						station_id, variable_id, reftime, value, v_flag, time_acquisizione)
+					SELECT station_id, variable_id, reftime, value, v_flag, time_acquisizione
+					FROM bronze.ultimo_bollettino
+					WHERE not (value is NULL or value < 0
+						  or station_id is null 
+						  or variable_id is null 
+						  or reftime is null 
+						  or v_flag is null) 
+					ON CONFLICT (station_id, variable_id, reftime)
+					DO UPDATE SET 
+						value = EXCLUDED.value,
+						v_flag = EXCLUDED.v_flag,
+						time_acquisizione = EXCLUDED.time_acquisizione
+					;
+
+
+-- silver.etl_errata_bollettini definition
+
+-- Drop table
+
+-- DROP TABLE silver.etl_errata_bollettini;
+
+CREATE TABLE silver.etl_errata_bollettini (
+	station_id int8 NULL,
+	variable_id int8 NULL,
+	reftime text NULL,
+	value float8 NULL,
+	v_flag text NULL,
+	time_acquisizione timestamptz NULL
+);
