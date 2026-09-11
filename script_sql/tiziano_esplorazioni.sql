@@ -1682,3 +1682,136 @@ SELECT
     MAX(id) AS max_id
 FROM bronze.cityranking_eu ce ;
 
+------------------------------------
+------------------------------------
+-- vecchie esplorazioni su localhost
+------------------------------------
+------------------------------------
+
+-- Estrae i valori delle misure giornaliere di PM10 per una centralina selezionata
+-- per un anno dato 
+-- centralina Porta San Felice codice stazione 7000015
+-- valori del parametro PM10 id_param = 5
+select * from silver.pm10 p 
+join silver.dim_stazioni ds on ds.cod_staz = p.cod_staz
+where p.id_param = 5 and ds.cod_staz = 7000015
+	and EXTRACT(YEAR FROM p.data_inizio) = 2024
+order by p.data_inizio ;
+
+with tabella as (
+select * from silver.pm10 p 
+join silver.dim_stazioni ds on ds.cod_staz = p.cod_staz
+where p.id_param = 5 and ds.cod_staz = 7000015
+	and EXTRACT(YEAR FROM p.data_inizio) = 2024
+order by p.data_inizio 
+)
+select * from tabella where data_fine != data_inizio ;
+-- in pratica data fine e data inizio coincidono (anno 2024)
+
+--come faccio a fare una tabella che contiene i valori delle misure, giorno per giorno, per ogni anno
+-- in modo parallelo?
+
+-- faccio la sola estrazione delle misure del 2025
+select p.cod_staz , p.id_param ,p.data_inizio ,p.valore , p.um  from silver.pm10 p 
+join silver.dim_stazioni ds on ds.cod_staz = p.cod_staz
+where p.id_param = 5 and ds.cod_staz = 7000015
+	and EXTRACT(YEAR FROM p.data_inizio) = 2025
+order by p.data_inizio 
+
+-- creo una view San Felice 2025 annuale valori giornalieri
+drop view if exists gold.sanfelice_2025;
+create view gold.sanfelice_2025 as (
+	select p.cod_staz , p.id_param ,p.data_inizio ,p.valore , p.um  from silver.pm10 p 
+	join silver.dim_stazioni ds on ds.cod_staz = p.cod_staz
+	where p.id_param = 5 and ds.cod_staz = 7000015
+		and EXTRACT(YEAR FROM p.data_inizio) = 2025
+	order by p.data_inizio 
+	);
+
+-- view San Felice 2024 
+drop view if exists gold.sanfelice_2024;
+create view gold.sanfelice_2024 as (
+	select p.cod_staz , p.id_param ,p.data_inizio ,p.valore , p.um  from silver.pm10 p 
+	join silver.dim_stazioni ds on ds.cod_staz = p.cod_staz
+	where p.id_param = 5 and ds.cod_staz = 7000015
+		and EXTRACT(YEAR FROM p.data_inizio) = 2024
+	order by p.data_inizio 
+	);
+
+-- view San Felice 2023 
+drop view if exists gold.sanfelice_2023;
+create view gold.sanfelice_2023 as (
+	select p.cod_staz , p.id_param ,p.data_inizio ,p.valore , p.um  from silver.pm10 p 
+	join silver.dim_stazioni ds on ds.cod_staz = p.cod_staz
+	where p.id_param = 5 and ds.cod_staz = 7000015
+		and EXTRACT(YEAR FROM p.data_inizio) = 2023
+	order by p.data_inizio 
+	);
+
+-- identificare le centraline che hanno più sforamenti nel 2025
+-- pm 10
+select ds.stazione , ds.comune , ds.provincia  , count(p.valore) 
+from silver.pm10 p 
+join silver.dim_stazioni ds on ds.cod_staz =p.cod_staz 
+where EXTRACT(YEAR FROM p.data_inizio) = 2025 and p.valore >= 50
+group by ds.stazione , ds.comune , ds.provincia
+having count(p.valore) >=35
+order by count(p.valore) DESC
+;
+
+-- quante volte è stato superato il limite di ozono di 120ug/m3?
+-- query semplice solo valore orario diviso 
+select ds.stazione , ds.comune , ds.provincia  , count(o.valore) 
+from silver.o3 o  
+join silver.dim_stazioni ds on ds.cod_staz = o.cod_staz  
+where EXTRACT(YEAR FROM o.data_inizio) = 2025 and o.valore >= 120
+group by ds.stazione , ds.comune , ds.provincia
+order by count(o.valore) DESC;
+
+-- quante misure esistono per stazioni?
+-- non è che alcune stazioni hanno poche misure e per questo risultano meno "inquinate"?
+select ds.stazione , ds.comune , ds.provincia  , count(o.valore) 
+from silver.o3 o  
+join silver.dim_stazioni ds on ds.cod_staz = o.cod_staz  
+where EXTRACT(YEAR FROM o.data_inizio) = 2025
+group by ds.stazione , ds.comune , ds.provincia
+order by count(o.valore) DESC;
+
+-- vediamo il biossido di azoto
+-- limite orario 200 ug/m3 per non più di un ora
+-- non più di 18 superamenti dei 200 orari in un anno
+-- max 40 ug/m3 concentrazione media annua
+
+-- verifica superamenti orari dei 200 ug/m3
+select ds.stazione , ds.comune , ds.provincia  , count(n.valore) 
+from silver.no2 n   
+join silver.dim_stazioni ds on ds.cod_staz = n.cod_staz  
+where EXTRACT(YEAR FROM n.data_inizio) = 2025 and n.valore >= 100 
+group by ds.stazione , ds.comune , ds.provincia
+order by count(n.valore) DESC;
+-- pare che max siano 18 superamenti dei 100 ug/m3
+-- vediamo la media annua
+select ds.stazione , ds.comune , ds.provincia  , avg(n.valore) 
+from silver.no2 n   
+join silver.dim_stazioni ds on ds.cod_staz = n.cod_staz  
+where EXTRACT(YEAR FROM n.data_inizio) = 2025
+group by ds.stazione , ds.comune , ds.provincia
+order by avg(n.valore) DESC;
+-- alcune stazioni in pre-allarme per aver superato i 28 ug/m3
+
+-- per il monossido di carbonio si fa riferimento alla direttiva 2008/50/CE 
+-- pubblicata in gazzetta ufficiale 15-set-2010 n.216
+-- si stabilisce un valore non superiore a 10 ug/m3 su media oraria di 8 ore consecutive
+
+
+-- creazione della tabella dei comuni della Emilia-Romagna
+-- con sigla della provincia e coordinate geografiche latitudine e longitudine
+create table silver.comuni_geo as (
+	select ig.istat::text, comune, dp.targa as sigla_provincia, lng, lat 
+	from public.italy_geo ig
+	join bandi_silver.dim_provincie dp on dp.id_provincia::int = left(ig.istat::text,2)::int
+	where ig.istat::text like '99%' or (ig.istat >= 33000 and ig.istat<=40999) 
+	);
+
+
+
