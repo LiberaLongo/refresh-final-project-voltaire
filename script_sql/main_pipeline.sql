@@ -154,7 +154,7 @@ create table silver.o3_03 as (
 
 -- conversione dei dati tempo in tipo timestamp::date
 -- cancellazione della data_fine e creazione colonna ora_inizio
-drop table if exists silver.co CASCADE;
+drop table if exists silver.co;
 create table silver.co as (
 	SELECT cod_staz, id_param, 
 	to_timestamp(left(data_inizio, 10), 'DD/MM/YYYY' )::date as data_inizio,
@@ -209,7 +209,7 @@ create table silver.fatto_misure as (
 );
 
 -- dimensione stagioni
-drop table if exists silver.dim_season;
+drop table if exists silver.dim_season CASCADE;
 create table silver.dim_season as (
 	select 1 as id_season, 'Inverno' as name
 	union all
@@ -315,7 +315,7 @@ AS $function$
         j
     FROM indici
     WHERE i BETWEEN 0 AND 14
-      AND j BETWEEN 0 AND 39;
+      AND j BETWEEN 0 AND 39
 $function$
 ;
 
