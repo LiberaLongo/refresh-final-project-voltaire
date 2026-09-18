@@ -164,6 +164,11 @@ def forecast():
 	# dati ristretti all'area geografica compresa 
 	# tra latitudine 45.2 e 44.0 e longitudine 9.0 e 13.0 (Italia settentrionale).
 
+#	18/09/2026 disattivata la key di accesso a Copernicus
+#   chiude la chiamata alla funzione senza attivare la connessione
+#   che non funzionerebbe più
+	return 
+
 	today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
 	# definisce il file per accesso a Copernicus
